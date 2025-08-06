@@ -1,1150 +1,160 @@
---[[
-    Ultra Advanced UI Library v3.0 (Fixed)
-    Features:
-    - Modern sleek design with acrylic blur effects
-    - 60+ animations including spring physics
-    - Full theme customization with presets
-    - Tab system with icons
-    - Advanced controls (sliders, dropdowns, color pickers)
-    - Custom code injection with sandboxing
-    - Notification system
-    - Over 2000 lines of premium UI code
-]]
+local library = loadstring(game:GetObjects("rbxassetid://7657867786")[1].Source)()
+local Wait = library.subs.Wait -- Only returns if the GUI has not been terminated. For 'while Wait() do' loops
 
-local UiLib = {}
-
--- Core services
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-
--- Utility functions
-UiLib.Utility = {}
-
-function UiLib.Utility.CreateInstance(className, properties)
-    local instance = Instance.new(className)
-    for property, value in pairs(properties) do
-        instance[property] = value
-    end
-    return instance
-end
-
-function UiLib.Utility.DeepCopy(original)
-    local copy = {}
-    for k, v in pairs(original) do
-        if type(v) == "table" then
-            v = UiLib.Utility.DeepCopy(v)
-        end
-        copy[k] = v
-    end
-    return copy
-end
-
-function UiLib.Utility.Round(num, decimalPlaces)
-    local mult = 10^(decimalPlaces or 0)
-    return math.floor(num * mult + 0.5) / mult
-end
-
--- Configuration
-UiLib.Configuration = {
-    Version = "3.0.0",
-    DebugMode = false,
-    Themes = {
-        Dark = {
-            MainColor = Color3.fromRGB(30, 30, 40),
-            SecondaryColor = Color3.fromRGB(45, 45, 55),
-            AccentColor = Color3.fromRGB(0, 170, 255),
-            TextColor = Color3.fromRGB(240, 240, 240),
-            ShadowColor = Color3.fromRGB(0, 0, 0, 0.5),
-            ToggleOnColor = Color3.fromRGB(0, 230, 118),
-            ToggleOffColor = Color3.fromRGB(255, 82, 82),
-            SliderColor = Color3.fromRGB(0, 170, 255),
-            DropdownColor = Color3.fromRGB(60, 60, 70),
-            NotificationColor = Color3.fromRGB(45, 45, 55),
-            Font = Enum.Font.GothamSemibold,
-            TextSize = 14,
-            CornerRadius = UDim.new(0, 8),
-            Padding = 12,
-            Transparency = 0.05,
-            Blur = true,
-            BlurSize = 8
-        },
-        Light = {
-            MainColor = Color3.fromRGB(240, 240, 245),
-            SecondaryColor = Color3.fromRGB(220, 220, 230),
-            AccentColor = Color3.fromRGB(0, 120, 215),
-            TextColor = Color3.fromRGB(30, 30, 40),
-            ShadowColor = Color3.fromRGB(0, 0, 0, 0.2),
-            ToggleOnColor = Color3.fromRGB(0, 200, 83),
-            ToggleOffColor = Color3.fromRGB(255, 23, 68),
-            SliderColor = Color3.fromRGB(0, 120, 215),
-            DropdownColor = Color3.fromRGB(200, 200, 210),
-            NotificationColor = Color3.fromRGB(220, 220, 230),
-            Font = Enum.Font.GothamSemibold,
-            TextSize = 14,
-            CornerRadius = UDim.new(0, 8),
-            Padding = 12,
-            Transparency = 0.02,
-            Blur = false,
-            BlurSize = 0
-        },
-        Cyber = {
-            MainColor = Color3.fromRGB(15, 15, 25),
-            SecondaryColor = Color3.fromRGB(25, 25, 40),
-            AccentColor = Color3.fromRGB(0, 255, 200),
-            TextColor = Color3.fromRGB(220, 220, 255),
-            ShadowColor = Color3.fromRGB(0, 255, 200, 0.3),
-            ToggleOnColor = Color3.fromRGB(0, 255, 200),
-            ToggleOffColor = Color3.fromRGB(255, 50, 100),
-            SliderColor = Color3.fromRGB(0, 255, 200),
-            DropdownColor = Color3.fromRGB(30, 30, 50),
-            NotificationColor = Color3.fromRGB(25, 25, 40),
-            Font = Enum.Font.Code,
-            TextSize = 14,
-            CornerRadius = UDim.new(0, 4),
-            Padding = 10,
-            Transparency = 0.1,
-            Blur = true,
-            BlurSize = 12
-        }
-    },
-    CurrentTheme = "Dark",
-    ActiveTabs = {},
-    CustomCode = {},
-    Notifications = {},
-    Draggable = true,
-    Minimized = false,
-    SafeZones = {
-        Top = 50,
-        Bottom = 50,
-        Left = 50,
-        Right = 50
-    }
+local PepsisWorld = library:CreateWindow({
+Name = "Havoc Hub",
+Themeable = {
+Info = "Best Script FOR Any shooting game (I hope)"
 }
+})
 
--- Animation system with spring physics
-UiLib.Animations = {
-    Springs = {},
-    
-    CreateSpring = function(target, speed, damping)
-        local spring = {
-            Target = target,
-            Position = target.Position,
-            Velocity = Vector2.new(0, 0),
-            Speed = speed or 20,
-            Damping = damping or 0.5,
-            Connections = {}
-        }
-        
-        table.insert(UiLib.Animations.Springs, spring)
-        return spring
-    end,
-    
-    Tween = function(obj, props, duration, easingStyle, easingDirection)
-        local tweenInfo = TweenInfo.new(
-            duration or 0.3,
-            easingStyle or Enum.EasingStyle.Quad,
-            easingDirection or Enum.EasingDirection.Out
-        )
-        local tween = TweenService:Create(obj, tweenInfo, props)
-        tween:Play()
-        return tween
-    end,
-    
-    Pulse = function(obj, scale, duration)
-        local originalSize = obj.Size
-        local tween1 = UiLib.Animations.Tween(obj, {Size = originalSize * scale}, duration/2)
-        tween1.Completed:Wait()
-        UiLib.Animations.Tween(obj, {Size = originalSize}, duration/2)
-    end,
-    
-    Shake = function(obj, intensity, duration)
-        local originalPos = obj.Position
-        local shakeConn
-        local elapsed = 0
-        
-        shakeConn = RunService.Heartbeat:Connect(function(dt)
-            elapsed = elapsed + dt
-            if elapsed >= duration then
-                shakeConn:Disconnect()
-                obj.Position = originalPos
-                return
-            end
-            
-            local offset = Vector2.new(
-                (math.random() * 2 - 1) * intensity,
-                (math.random() * 2 - 1) * intensity
-            )
-            
-            obj.Position = originalPos + offset
-        end)
-    end
-}
-
--- Initialize UI elements
-UiLib.ScreenGui = Instance.new("ScreenGui")
-UiLib.ScreenGui.Name = "UltraAdvancedUILib"
-UiLib.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-UiLib.ScreenGui.DisplayOrder = 999
-UiLib.ScreenGui.ResetOnSpawn = false
-
--- Main container with acrylic effect
-UiLib.MainFrame = Instance.new("Frame")
-UiLib.MainFrame.Name = "MainFrame"
-UiLib.MainFrame.Size = UDim2.new(0, 500, 0, 600)
-UiLib.MainFrame.Position = UDim2.new(0.5, -250, 0.5, -300)
-UiLib.MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-UiLib.MainFrame.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].MainColor
-UiLib.MainFrame.BackgroundTransparency = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Transparency
-UiLib.MainFrame.BorderSizePixel = 0
-UiLib.MainFrame.ClipsDescendants = true
-UiLib.MainFrame.Parent = UiLib.ScreenGui
-
--- Create blur effect
-if UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Blur then
-    UiLib.BlurEffect = Instance.new("BlurEffect")
-    UiLib.BlurEffect.Size = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].BlurSize
-    UiLib.BlurEffect.Parent = UiLib.MainFrame
+local GeneralTab = PepsisWorld:CreateTab({
+Name = "General"
+})
+local FarmingSection = GeneralTab:CreateSection({
+Name = "Farming"
+})
+FarmingSection:AddToggle({
+Name = "EXP Grinder",
+Flag = "FarmingSection_EXPGrinder"
+})
+FarmingSection:AddToggle({
+Name = "Trick Spammer",
+Flag = "FarmingSection_TrickSpammer",
+Keybind = 1,
+Callback = print
+})
+FarmingSection:AddSlider({
+Name = "Trick Rate",
+Flag = "FarmingSection_TrickRate",
+Value = 0.15,
+Precise = 2,
+Min = 0,
+Max = 1
+})
+FarmingSection:AddToggle({
+Name = "TP To Coins",
+Flag = "FarmingSection_TPCoins"
+})
+FarmingSection:AddToggle({
+Name = "Collect Coins",
+Flag = "FarmingSection_CollectCoins",
+Callback = print
+})
+FarmingSection:AddSlider({
+Name = "Coin Distance",
+Flag = "FarmingSection_CoinDistance",
+Value = 175,
+Min = 0,
+Max = 200,
+Format = function(Value)
+if Value == 0 then
+return "Collection Distance: Infinite"
+else
+return "Collection Distance: " .. tostring(Value)
 end
-
--- Top bar with title and controls
-local topBar = Instance.new("Frame")
-topBar.Name = "TopBar"
-topBar.Size = UDim2.new(1, 0, 0, 40)
-topBar.Position = UDim2.new(0, 0, 0, 0)
-topBar.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].SecondaryColor
-topBar.BackgroundTransparency = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Transparency
-topBar.BorderSizePixel = 0
-topBar.ZIndex = 2
-topBar.Parent = UiLib.MainFrame
-
--- Title with icon
-local titleContainer = Instance.new("Frame")
-titleContainer.Name = "TitleContainer"
-titleContainer.Size = UDim2.new(0, 200, 1, 0)
-titleContainer.Position = UDim2.new(0, 10, 0, 0)
-titleContainer.BackgroundTransparency = 1
-titleContainer.Parent = topBar
-
-local icon = Instance.new("ImageLabel")
-icon.Name = "Icon"
-icon.Size = UDim2.new(0, 24, 0, 24)
-icon.Position = UDim2.new(0, 0, 0.5, -12)
-icon.BackgroundTransparency = 1
-icon.Image = "rbxassetid://7072706620" -- Default icon
-icon.Parent = titleContainer
-
-local title = Instance.new("TextLabel")
-title.Name = "Title"
-title.Size = UDim2.new(1, -34, 1, 0)
-title.Position = UDim2.new(0, 34, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "Ultra UI Library"
-title.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Font = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Font
-title.TextSize = 18
-title.Parent = titleContainer
-
--- Control buttons
-local controlButtons = Instance.new("Frame")
-controlButtons.Name = "ControlButtons"
-controlButtons.Size = UDim2.new(0, 100, 1, 0)
-controlButtons.Position = UDim2.new(1, -100, 0, 0)
-controlButtons.BackgroundTransparency = 1
-controlButtons.Parent = topBar
-
-local minimizeButton = Instance.new("TextButton")
-minimizeButton.Name = "MinimizeButton"
-minimizeButton.Size = UDim2.new(0, 30, 1, 0)
-minimizeButton.Position = UDim2.new(0, 0, 0, 0)
-minimizeButton.BackgroundTransparency = 1
-minimizeButton.Text = "_"
-minimizeButton.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-minimizeButton.Font = Enum.Font.GothamBold
-minimizeButton.TextSize = 18
-minimizeButton.Parent = controlButtons
-
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 30, 1, 0)
-closeButton.Position = UDim2.new(0, 40, 0, 0)
-closeButton.BackgroundTransparency = 1
-closeButton.Text = "×"
-closeButton.TextColor3 = Color3.fromRGB(255, 100, 100)
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 24
-closeButton.Parent = controlButtons
-
--- Tab system
-UiLib.TabContainer = Instance.new("Frame")
-UiLib.TabContainer.Name = "TabContainer"
-UiLib.TabContainer.Size = UDim2.new(0, 150, 1, -40)
-UiLib.TabContainer.Position = UDim2.new(0, 0, 0, 40)
-UiLib.TabContainer.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].SecondaryColor
-UiLib.TabContainer.BackgroundTransparency = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Transparency
-UiLib.TabContainer.BorderSizePixel = 0
-UiLib.TabContainer.ZIndex = 2
-UiLib.TabContainer.Parent = UiLib.MainFrame
-
-UiLib.TabList = Instance.new("ScrollingFrame")
-UiLib.TabList.Name = "TabList"
-UiLib.TabList.Size = UDim2.new(1, 0, 1, 0)
-UiLib.TabList.Position = UDim2.new(0, 0, 0, 0)
-UiLib.TabList.BackgroundTransparency = 1
-UiLib.TabList.ScrollBarThickness = 3
-UiLib.TabList.ScrollBarImageColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].AccentColor
-UiLib.TabList.CanvasSize = UDim2.new(0, 0, 0, 0)
-UiLib.TabList.AutomaticCanvasSize = Enum.AutomaticSize.Y
-UiLib.TabList.Parent = UiLib.TabContainer
-
-UiLib.TabLayout = Instance.new("UIListLayout")
-UiLib.TabLayout.Name = "TabLayout"
-UiLib.TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UiLib.TabLayout.Padding = UDim.new(0, 5)
-UiLib.TabLayout.Parent = UiLib.TabList
-
-UiLib.ContentContainer = Instance.new("Frame")
-UiLib.ContentContainer.Name = "ContentContainer"
-UiLib.ContentContainer.Size = UDim2.new(1, -150, 1, -40)
-UiLib.ContentContainer.Position = UDim2.new(0, 150, 0, 40)
-UiLib.ContentContainer.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].MainColor
-UiLib.ContentContainer.BackgroundTransparency = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Transparency
-UiLib.ContentContainer.BorderSizePixel = 0
-UiLib.ContentContainer.ClipsDescendants = true
-UiLib.ContentContainer.Parent = UiLib.MainFrame
-
--- Notification container
-UiLib.NotificationContainer = Instance.new("Frame")
-UiLib.NotificationContainer.Name = "NotificationContainer"
-UiLib.NotificationContainer.Size = UDim2.new(0, 300, 0, 0)
-UiLib.NotificationContainer.Position = UDim2.new(1, -320, 1, -10)
-UiLib.NotificationContainer.AnchorPoint = Vector2.new(1, 1)
-UiLib.NotificationContainer.BackgroundTransparency = 1
-UiLib.NotificationContainer.Parent = UiLib.ScreenGui
-
--- Add shadows to main elements
-local function AddShadow(frame, elevation)
-    elevation = elevation or 5
-    local shadow = Instance.new("ImageLabel")
-    shadow.Name = "Shadow"
-    shadow.Size = UDim2.new(1, elevation*2, 1, elevation*2)
-    shadow.Position = UDim2.new(0.5, -elevation, 0.5, -elevation)
-    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://1316045217"
-    shadow.ImageColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].ShadowColor
-    shadow.ImageTransparency = 0.5
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(10, 10, 118, 118)
-    shadow.ZIndex = frame.ZIndex - 1
-    shadow.Parent = frame
-    return shadow
 end
+})
 
-AddShadow(UiLib.MainFrame, 10)
-AddShadow(topBar, 5)
-AddShadow(UiLib.TabContainer, 5)
-
--- Apply corner radius to elements
-local function ApplyCorners(frame)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].CornerRadius
-    corner.Parent = frame
-    return corner
+local BoardControlSection = GeneralTab:CreateSection({
+Name = "Board Control"
+})
+BoardControlSection:AddToggle({
+Name = "Anti Trip/Ragdoll",
+Flag = "BoardControlSection_AntiTripRagdoll",
+Callback = print
+})
+BoardControlSection:AddToggle({
+Name = "No Wear & Tear",
+Flag = "BoardControlSection_NoWearTear"
+})
+BoardControlSection:AddToggle({
+Name = "No Trick Cooldown",
+Flag = "BoardControlSection_NoTrickCooldown",
+Callback = print
+})
+BoardControlSection:AddToggle({
+Name = "Extend Combo Timout",
+Flag = "BoardControlSection_ExtendComboTimeout"
+})
+BoardControlSection:AddSlider({
+Name = "Timeout Extension",
+Flag = "BoardControlSection_CoinDistance",
+Value = 3,
+Min = 0,
+Max = 20,
+Format = function(Value)
+if Value == 0 then
+return "Combo Timeout: Never"
+else
+return "Combo Timeout: " .. tostring(Value) .. "s"
 end
-
-ApplyCorners(UiLib.MainFrame)
-ApplyCorners(topBar)
-ApplyCorners(UiLib.TabContainer)
-
--- Make window draggable
-local dragging
-local dragInput
-local dragStart
-local startPos
-
-local function UpdateInput(input)
-    local delta = input.Position - dragStart
-    local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    
-    -- Apply safe zone constraints
-    local viewportSize = workspace.CurrentCamera.ViewportSize
-    local safeZone = UiLib.Configuration.SafeZones
-    
-    newPos = UDim2.new(
-        math.clamp(newPos.X.Scale, 0, 1),
-        math.clamp(newPos.X.Offset, safeZone.Left, viewportSize.X - safeZone.Right - UiLib.MainFrame.AbsoluteSize.X),
-        math.clamp(newPos.Y.Scale, 0, 1),
-        math.clamp(newPos.Y.Offset, safeZone.Top, viewportSize.Y - safeZone.Bottom - UiLib.MainFrame.AbsoluteSize.Y)
-    )
-    
-    UiLib.MainFrame.Position = newPos
 end
+})
 
-topBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = UiLib.MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-topBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        UpdateInput(input)
-    end
-end)
-
--- Window controls
-minimizeButton.MouseButton1Click:Connect(function()
-    UiLib:Minimize()
-end)
-
-closeButton.MouseButton1Click:Connect(function()
-    UiLib:Destroy()
-end)
-
--- Theme management
-function UiLib:SetTheme(themeName)
-    if not UiLib.Configuration.Themes[themeName] then
-        warn("Theme '"..themeName.."' doesn't exist!")
-        return false
-    end
-    
-    UiLib.Configuration.CurrentTheme = themeName
-    self:UpdateTheme()
-    return true
+local MiscSection = GeneralTab:CreateSection({
+Name = "Misc",
+Side = "Right"
+})
+MiscSection:AddToggle({
+Name = "Unlock Gamepasses",
+Flag = "MiscSection_UnlockGamepasses",
+Callback = print
+})
+MiscSection:AddToggle({
+Name = "Auto Compete",
+Flag = "MiscSection_AutoCompete",
+Callback = print
+})
+MiscSection:AddButton({
+Name = "Repair Board",
+Callback = function()
+print("Fixed")
 end
+})
+MiscSection:AddKeybind({
+Name = "Test Key",
+Callback = print
+})
+MiscSection:AddToggle({
+Name = "Test Toggle/Key",
+Keybind = {
+Mode = "Dynamic" -- Dynamic means to use the 'hold' method, if the user keeps the button pressed for longer than 0.65 seconds; else use toggle method
+},
+Callback = print
+})
 
-function UiLib:UpdateTheme()
-    local theme = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme]
-    
-    -- Update main elements
-    UiLib.MainFrame.BackgroundColor3 = theme.MainColor
-    UiLib.MainFrame.BackgroundTransparency = theme.Transparency
-    
-    topBar.BackgroundColor3 = theme.SecondaryColor
-    topBar.BackgroundTransparency = theme.Transparency
-    
-    UiLib.TabContainer.BackgroundColor3 = theme.SecondaryColor
-    UiLib.TabContainer.BackgroundTransparency = theme.Transparency
-    
-    UiLib.ContentContainer.BackgroundColor3 = theme.MainColor
-    UiLib.ContentContainer.BackgroundTransparency = theme.Transparency
-    
-    -- Update text colors
-    title.TextColor3 = theme.TextColor
-    minimizeButton.TextColor3 = theme.TextColor
-    
-    -- Update blur effect
-    if UiLib.BlurEffect then
-        UiLib.BlurEffect.Enabled = theme.Blur
-        UiLib.BlurEffect.Size = theme.BlurSize
-    elseif theme.Blur then
-        UiLib.BlurEffect = Instance.new("BlurEffect")
-        UiLib.BlurEffect.Size = theme.BlurSize
-        UiLib.BlurEffect.Parent = UiLib.MainFrame
-    end
-    
-    -- Update all existing UI elements
-    for _, tab in pairs(UiLib.Configuration.ActiveTabs) do
-        if tab.TabButton then
-            tab.TabButton.BackgroundColor3 = tab.Active and theme.AccentColor or theme.SecondaryColor
-            tab.TabButton.TextColor3 = theme.TextColor
-            tab.TabButton.BackgroundTransparency = tab.Active and 0 or theme.Transparency
-        end
-        
-        for _, section in pairs(tab.Sections) do
-            if section.Frame then
-                section.Frame.BackgroundColor3 = theme.SecondaryColor
-                section.Frame.BackgroundTransparency = theme.Transparency
-                section.Title.TextColor3 = theme.TextColor
-                
-                for _, control in pairs(section.Controls) do
-                    if control.Type == "Toggle" then
-                        control.ToggleFrame.BackgroundColor3 = control.Value and 
-                            theme.ToggleOnColor or 
-                            theme.ToggleOffColor
-                        control.ToggleText.TextColor3 = theme.TextColor
-                    elseif control.Type == "Button" then
-                        control.Button.BackgroundColor3 = theme.AccentColor
-                        control.Button.TextColor3 = theme.TextColor
-                    elseif control.Type == "Slider" then
-                        control.SliderLine.BackgroundColor3 = theme.SliderColor
-                        control.SliderText.TextColor3 = theme.TextColor
-                        control.SliderValue.TextColor3 = theme.TextColor
-                    end
-                end
-            end
-        end
-    end
+local FunSection = GeneralTab:CreateSection({
+Name = "Fun Cosmetics"
+})
+FunSection:AddToggle({
+Name = "Ragdoll Assumes Flight",
+Flag = "FunSection_AssumesFlight"
+})
+FunSection:AddToggle({
+Name = "Ragdoll On Player Collision",
+Flag = "FunSection_RagdollOnPlayerCollision"
+})
+FunSection:AddToggle({
+Name = "Un-Ragdoll When Motionless",
+Flag = "FunSection_UnRagdollWhenMotionless"
+})
+FunSection:AddToggle({
+Name = "Extend Ragdoll Duration",
+Flag = "FunSection_ExtendRagdollDuration"
+})
+FunSection:AddSlider({
+Name = "Coin Distance",
+Flag = "FarmingSection_Coin Distance",
+Value = 4,
+Min = 0,
+Max = 60,
+Textbox = true,
+Format = function(Value)
+if Value == 0 then
+return "Ragdoll Extension: Indefinite"
+else
+return "Ragdoll Extension: " .. tostring(Value) .. "s"
 end
-
--- Tab system
-function UiLib:CreateTab(tabName, iconId)
-    if UiLib.Configuration.ActiveTabs[tabName] then
-        warn("Tab '"..tabName.."' already exists!")
-        return UiLib.Configuration.ActiveTabs[tabName]
-    end
-    
-    local newTab = {
-        Name = tabName,
-        Icon = iconId,
-        Sections = {},
-        Controls = {},
-        Active = false
-    }
-    
-    -- Create tab button
-    local tabButton = Instance.new("TextButton")
-    tabButton.Name = tabName
-    tabButton.Size = UDim2.new(1, -10, 0, 40)
-    tabButton.Position = UDim2.new(0, 5, 0, 0)
-    tabButton.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].SecondaryColor
-    tabButton.BackgroundTransparency = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Transparency
-    tabButton.BorderSizePixel = 0
-    tabButton.Text = ""
-    tabButton.AutoButtonColor = false
-    tabButton.Parent = UiLib.TabList
-    
-    ApplyCorners(tabButton)
-    
-    local buttonContent = Instance.new("Frame")
-    buttonContent.Name = "Content"
-    buttonContent.Size = UDim2.new(1, 0, 1, 0)
-    buttonContent.Position = UDim2.new(0, 0, 0, 0)
-    buttonContent.BackgroundTransparency = 1
-    buttonContent.Parent = tabButton
-    
-    local icon = Instance.new("ImageLabel")
-    icon.Name = "Icon"
-    icon.Size = UDim2.new(0, 20, 0, 20)
-    icon.Position = UDim2.new(0, 10, 0.5, -10)
-    icon.BackgroundTransparency = 1
-    icon.Image = iconId and "rbxassetid://"..iconId or "rbxassetid://7072706620"
-    icon.Parent = buttonContent
-    
-    local label = Instance.new("TextLabel")
-    label.Name = "Label"
-    label.Size = UDim2.new(1, -40, 1, 0)
-    label.Position = UDim2.new(0, 40, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Text = tabName
-    label.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-    label.Font = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Font
-    label.TextSize = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextSize
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = buttonContent
-    
-    -- Create content frame
-    local contentFrame = Instance.new("ScrollingFrame")
-    contentFrame.Name = tabName.."Content"
-    contentFrame.Size = UDim2.new(1, 0, 1, 0)
-    contentFrame.Position = UDim2.new(0, 0, 0, 0)
-    contentFrame.BackgroundTransparency = 1
-    contentFrame.ScrollBarThickness = 3
-    contentFrame.ScrollBarImageColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].AccentColor
-    contentFrame.Visible = false
-    contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    contentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-    contentFrame.Parent = UiLib.ContentContainer
-    
-    local layout = Instance.new("UIListLayout")
-    layout.Name = "Layout"
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    layout.Parent = contentFrame
-    
-    local padding = Instance.new("UIPadding")
-    padding.Name = "Padding"
-    padding.PaddingLeft = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    padding.PaddingRight = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    padding.PaddingTop = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    padding.PaddingBottom = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    padding.Parent = contentFrame
-    
-    newTab.TabButton = tabButton
-    newTab.ContentFrame = contentFrame
-    
-    -- Set up tab switching
-    tabButton.MouseButton1Click:Connect(function()
-        self:SwitchTab(tabName)
-    end)
-    
-    UiLib.Configuration.ActiveTabs[tabName] = newTab
-    
-    -- If this is the first tab, make it active
-    if not self.CurrentTab then
-        self:SwitchTab(tabName)
-    end
-    
-    return newTab
 end
-
-function UiLib:SwitchTab(tabName)
-    if not UiLib.Configuration.ActiveTabs[tabName] then return end
-    
-    if self.CurrentTab then
-        self.CurrentTab.ContentFrame.Visible = false
-        if self.CurrentTab.TabButton then
-            self.CurrentTab.TabButton.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].SecondaryColor
-            self.CurrentTab.TabButton.BackgroundTransparency = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Transparency
-            self.CurrentTab.Active = false
-        end
-    end
-    
-    self.CurrentTab = UiLib.Configuration.ActiveTabs[tabName]
-    self.CurrentTab.ContentFrame.Visible = true
-    if self.CurrentTab.TabButton then
-        self.CurrentTab.TabButton.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].AccentColor
-        self.CurrentTab.TabButton.BackgroundTransparency = 0
-        self.CurrentTab.Active = true
-    end
-    
-    -- Play animation
-    UiLib.Animations.Tween(self.CurrentTab.ContentFrame, {CanvasPosition = Vector2.new(0, 0)}, 0.2)
-    UiLib.Animations.Pulse(self.CurrentTab.TabButton, 0.95, 0.2)
-end
-
--- Section system
-function UiLib:CreateSection(tabName, sectionName)
-    if not UiLib.Configuration.ActiveTabs[tabName] then
-        warn("Tab '"..tabName.."' doesn't exist!")
-        return nil
-    end
-    
-    local tab = UiLib.Configuration.ActiveTabs[tabName]
-    
-    if tab.Sections[sectionName] then
-        warn("Section '"..sectionName.."' already exists in tab '"..tabName.."'!")
-        return tab.Sections[sectionName]
-    end
-    
-    local newSection = {
-        Name = sectionName,
-        Controls = {},
-        ParentTab = tabName
-    }
-    
-    -- Create section frame
-    local sectionFrame = Instance.new("Frame")
-    sectionFrame.Name = sectionName
-    sectionFrame.Size = UDim2.new(1, 0, 0, 0)
-    sectionFrame.AutomaticSize = Enum.AutomaticSize.Y
-    sectionFrame.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].SecondaryColor
-    sectionFrame.BackgroundTransparency = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Transparency
-    sectionFrame.BorderSizePixel = 0
-    sectionFrame.Parent = tab.ContentFrame
-    
-    ApplyCorners(sectionFrame)
-    AddShadow(sectionFrame, 3)
-    
-    local layout = Instance.new("UIListLayout")
-    layout.Name = "Layout"
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    layout.Parent = sectionFrame
-    
-    local padding = Instance.new("UIPadding")
-    padding.Name = "Padding"
-    padding.PaddingLeft = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    padding.PaddingRight = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    padding.PaddingTop = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    padding.PaddingBottom = UDim.new(0, UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Padding)
-    padding.Parent = sectionFrame
-    
-    -- Section title
-    local title = Instance.new("TextLabel")
-    title.Name = "Title"
-    title.Size = UDim2.new(1, 0, 0, 24)
-    title.BackgroundTransparency = 1
-    title.Text = sectionName:upper()
-    title.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-    title.Font = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Font
-    title.TextSize = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextSize
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = sectionFrame
-    
-    -- Divider
-    local divider = Instance.new("Frame")
-    divider.Name = "Divider"
-    divider.Size = UDim2.new(1, 0, 0, 1)
-    divider.Position = UDim2.new(0, 0, 0, 24)
-    divider.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].AccentColor
-    divider.BackgroundTransparency = 0.5
-    divider.BorderSizePixel = 0
-    divider.Parent = sectionFrame
-    
-    newSection.Frame = sectionFrame
-    newSection.Title = title
-    newSection.Layout = layout
-    
-    tab.Sections[sectionName] = newSection
-    
-    return newSection
-end
-
--- Control creation
-function UiLib:CreateToggle(tabName, sectionName, toggleName, defaultValue, callback)
-    if not UiLib.Configuration.ActiveTabs[tabName] then
-        warn("Tab '"..tabName.."' doesn't exist!")
-        return nil
-    end
-    
-    local tab = UiLib.Configuration.ActiveTabs[tabName]
-    local section = tab.Sections[sectionName]
-    
-    if not section then
-        section = self:CreateSection(tabName, sectionName)
-    end
-    
-    local newToggle = {
-        Name = toggleName,
-        Type = "Toggle",
-        Value = defaultValue or false,
-        Callback = callback,
-        ParentSection = sectionName,
-        ParentTab = tabName
-    }
-    
-    -- Create toggle frame
-    local toggleFrame = Instance.new("Frame")
-    toggleFrame.Name = toggleName
-    toggleFrame.Size = UDim2.new(1, 0, 0, 30)
-    toggleFrame.BackgroundTransparency = 1
-    toggleFrame.Parent = section.Frame
-    
-    local toggleText = Instance.new("TextLabel")
-    toggleText.Name = "Text"
-    toggleText.Size = UDim2.new(0.7, 0, 1, 0)
-    toggleText.Position = UDim2.new(0, 0, 0, 0)
-    toggleText.BackgroundTransparency = 1
-    toggleText.Text = toggleName
-    toggleText.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-    toggleText.Font = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Font
-    toggleText.TextSize = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextSize
-    toggleText.TextXAlignment = Enum.TextXAlignment.Left
-    toggleText.Parent = toggleFrame
-    
-    local toggleButton = Instance.new("TextButton")
-    toggleButton.Name = "Toggle"
-    toggleButton.Size = UDim2.new(0.3, 0, 0.8, 0)
-    toggleButton.Position = UDim2.new(0.7, 0, 0.1, 0)
-    toggleButton.BackgroundColor3 = newToggle.Value and 
-        UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].ToggleOnColor or 
-        UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].ToggleOffColor
-    toggleButton.BorderSizePixel = 0
-    toggleButton.AutoButtonColor = false
-    toggleButton.Text = ""
-    toggleButton.Parent = toggleFrame
-    
-    ApplyCorners(toggleButton)
-    
-    local toggleIndicator = Instance.new("Frame")
-    toggleIndicator.Name = "Indicator"
-    toggleIndicator.Size = UDim2.new(0.5, 0, 1, 0)
-    toggleIndicator.Position = UDim2.new(newToggle.Value and 0.5 or 0, 0, 0, 0)
-    toggleIndicator.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].SecondaryColor
-    toggleIndicator.BorderSizePixel = 0
-    toggleIndicator.Parent = toggleButton
-    
-    ApplyCorners(toggleIndicator)
-    
-    newToggle.ToggleFrame = toggleFrame
-    newToggle.ToggleText = toggleText
-    newToggle.ToggleButton = toggleButton
-    newToggle.ToggleIndicator = toggleIndicator
-    
-    -- Set up toggle functionality
-    toggleButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            newToggle.Value = not newToggle.Value
-            
-            UiLib.Animations.Tween(toggleIndicator, {
-                Position = UDim2.new(newToggle.Value and 0.5 or 0, 0, 0, 0)
-            }, 0.1)
-            
-            UiLib.Animations.Tween(toggleButton, {
-                BackgroundColor3 = newToggle.Value and 
-                    UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].ToggleOnColor or 
-                    UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].ToggleOffColor
-            }, 0.1)
-            
-            if newToggle.Callback then
-                newToggle.Callback(newToggle.Value)
-            end
-        end
-    end)
-    
-    section.Controls[toggleName] = newToggle
-    tab.Controls[toggleName] = newToggle
-    
-    return newToggle
-end
-
-function UiLib:CreateButton(tabName, sectionName, buttonName, callback)
-    if not UiLib.Configuration.ActiveTabs[tabName] then
-        warn("Tab '"..tabName.."' doesn't exist!")
-        return nil
-    end
-    
-    local tab = UiLib.Configuration.ActiveTabs[tabName]
-    local section = tab.Sections[sectionName]
-    
-    if not section then
-        section = self:CreateSection(tabName, sectionName)
-    end
-    
-    local newButton = {
-        Name = buttonName,
-        Type = "Button",
-        Callback = callback,
-        ParentSection = sectionName,
-        ParentTab = tabName
-    }
-    
-    -- Create button frame
-    local buttonFrame = Instance.new("TextButton")
-    buttonFrame.Name = buttonName
-    buttonFrame.Size = UDim2.new(1, 0, 0, 30)
-    buttonFrame.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].AccentColor
-    buttonFrame.BackgroundTransparency = 0
-    buttonFrame.BorderSizePixel = 0
-    buttonFrame.Text = buttonName
-    buttonFrame.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-    buttonFrame.Font = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Font
-    buttonFrame.TextSize = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextSize
-    buttonFrame.Parent = section.Frame
-    
-    ApplyCorners(buttonFrame)
-    
-    newButton.Button = buttonFrame
-    
-    -- Set up button functionality
-    buttonFrame.MouseButton1Click:Connect(function()
-        UiLib.Animations.Pulse(buttonFrame, 0.95, 0.2)
-        if newButton.Callback then
-            newButton.Callback()
-        end
-    end)
-    
-    section.Controls[buttonName] = newButton
-    tab.Controls[buttonName] = newButton
-    
-    return newButton
-end
-
--- Slider control
-function UiLib:CreateSlider(tabName, sectionName, sliderName, minValue, maxValue, defaultValue, callback)
-    if not UiLib.Configuration.ActiveTabs[tabName] then
-        warn("Tab '"..tabName.."' doesn't exist!")
-        return nil
-    end
-    
-    local tab = UiLib.Configuration.ActiveTabs[tabName]
-    local section = tab.Sections[sectionName]
-    
-    if not section then
-        section = self:CreateSection(tabName, sectionName)
-    end
-    
-    defaultValue = math.clamp(defaultValue or minValue, minValue, maxValue)
-    
-    local newSlider = {
-        Name = sliderName,
-        Type = "Slider",
-        Min = minValue,
-        Max = maxValue,
-        Value = defaultValue,
-        Callback = callback,
-        ParentSection = sectionName,
-        ParentTab = tabName
-    }
-    
-    -- Create slider frame
-    local sliderFrame = Instance.new("Frame")
-    sliderFrame.Name = sliderName
-    sliderFrame.Size = UDim2.new(1, 0, 0, 50)
-    sliderFrame.BackgroundTransparency = 1
-    sliderFrame.Parent = section.Frame
-    
-    local sliderText = Instance.new("TextLabel")
-    sliderText.Name = "Text"
-    sliderText.Size = UDim2.new(1, 0, 0, 20)
-    sliderText.Position = UDim2.new(0, 0, 0, 0)
-    sliderText.BackgroundTransparency = 1
-    sliderText.Text = sliderName
-    sliderText.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-    sliderText.Font = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Font
-    sliderText.TextSize = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextSize
-    sliderText.TextXAlignment = Enum.TextXAlignment.Left
-    sliderText.Parent = sliderFrame
-    
-    local sliderValue = Instance.new("TextLabel")
-    sliderValue.Name = "Value"
-    sliderValue.Size = UDim2.new(0, 60, 0, 20)
-    sliderValue.Position = UDim2.new(1, -60, 0, 0)
-    sliderValue.BackgroundTransparency = 1
-    sliderValue.Text = tostring(defaultValue)
-    sliderValue.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-    sliderValue.Font = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Font
-    sliderValue.TextSize = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextSize
-    sliderValue.TextXAlignment = Enum.TextXAlignment.Right
-    sliderValue.Parent = sliderFrame
-    
-    local sliderLine = Instance.new("Frame")
-    sliderLine.Name = "Line"
-    sliderLine.Size = UDim2.new(1, 0, 0, 4)
-    sliderLine.Position = UDim2.new(0, 0, 0, 25)
-    sliderLine.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].SliderColor
-    sliderLine.BorderSizePixel = 0
-    sliderLine.Parent = sliderFrame
-    
-    ApplyCorners(sliderLine)
-    
-    local sliderDot = Instance.new("Frame")
-    sliderDot.Name = "Dot"
-    sliderDot.Size = UDim2.new(0, 12, 0, 12)
-    sliderDot.Position = UDim2.new((defaultValue - minValue)/(maxValue - minValue), -6, 0, 21)
-    sliderDot.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-    sliderDot.BorderSizePixel = 0
-    sliderDot.Parent = sliderFrame
-    
-    ApplyCorners(sliderDot)
-    
-    newSlider.SliderFrame = sliderFrame
-    newSlider.SliderText = sliderText
-    newSlider.SliderValue = sliderValue
-    newSlider.SliderLine = sliderLine
-    newSlider.SliderDot = sliderDot
-    
-    -- Set up slider functionality
-    local dragging = false
-    
-    local function UpdateSlider(input)
-        local relativeX = (input.Position.X - sliderLine.AbsolutePosition.X) / sliderLine.AbsoluteSize.X
-        relativeX = math.clamp(relativeX, 0, 1)
-        
-        local newValue = minValue + (maxValue - minValue) * relativeX
-        newValue = math.floor(newValue * 100) / 100 -- Round to 2 decimal places
-        
-        if newValue ~= newSlider.Value then
-            newSlider.Value = newValue
-            sliderValue.Text = tostring(newValue)
-            sliderDot.Position = UDim2.new(relativeX, -6, 0, 21)
-            
-            if newSlider.Callback then
-                newSlider.Callback(newValue)
-            end
-        end
-    end
-    
-    sliderLine.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            UpdateSlider(input)
-        end
-    end)
-    
-    sliderLine.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            UpdateSlider(input)
-        end
-    end)
-    
-    section.Controls[sliderName] = newSlider
-    tab.Controls[sliderName] = newSlider
-    
-    return newSlider
-end
-
--- Notification system
-function UiLib:Notify(title, message, duration)
-    duration = duration or 5
-    
-    local notification = Instance.new("Frame")
-    notification.Name = "Notification"
-    notification.Size = UDim2.new(1, 0, 0, 0)
-    notification.AutomaticSize = Enum.AutomaticSize.Y
-    notification.BackgroundColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].NotificationColor
-    notification.BackgroundTransparency = 0
-    notification.BorderSizePixel = 0
-    notification.Parent = UiLib.NotificationContainer
-    
-    ApplyCorners(notification)
-    AddShadow(notification, 5)
-    
-    local layout = Instance.new("UIListLayout")
-    layout.Name = "Layout"
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
-    layout.Padding = UDim.new(0, 10)
-    layout.Parent = notification
-    
-    local padding = Instance.new("UIPadding")
-    padding.Name = "Padding"
-    padding.PaddingLeft = UDim.new(0, 15)
-    padding.PaddingRight = UDim.new(0, 15)
-    padding.PaddingTop = UDim.new(0, 15)
-    padding.PaddingBottom = UDim.new(0, 15)
-    padding.Parent = notification
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, 0, 0, 20)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = 16
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Parent = notification
-    
-    local messageLabel = Instance.new("TextLabel")
-    messageLabel.Name = "Message"
-    messageLabel.Size = UDim2.new(1, 0, 0, 0)
-    messageLabel.AutomaticSize = Enum.AutomaticSize.Y
-    messageLabel.BackgroundTransparency = 1
-    messageLabel.Text = message
-    messageLabel.TextColor3 = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextColor
-    messageLabel.Font = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].Font
-    messageLabel.TextSize = UiLib.Configuration.Themes[UiLib.Configuration.CurrentTheme].TextSize
-    messageLabel.TextWrapped = true
-    messageLabel.TextXAlignment = Enum.TextXAlignment.Left
-    messageLabel.Parent = notification
-    
-    -- Animate in
-    notification.Position = UDim2.new(1, 0, 1, 0)
-    notification.AnchorPoint = Vector2.new(1, 1)
-    UiLib.Animations.Tween(notification, {Position = UDim2.new(1, -10, 1, -10)}, 0.3)
-    
-    -- Auto-remove after duration
-    task.delay(duration, function()
-        UiLib.Animations.Tween(notification, {
-            Position = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1
-        }, 0.3)
-        
-        task.wait(0.3)
-        notification:Destroy()
-    end)
-    
-    return notification
-end
-
--- Custom code injection
-function UiLib:CreateOwnCode(codeName, codeFunction)
-    if UiLib.Configuration.CustomCode[codeName] then
-        warn("Custom code '"..codeName.."' already exists!")
-        return false
-    end
-    
-    UiLib.Configuration.CustomCode[codeName] = {
-        Name = codeName,
-        Function = codeFunction,
-        Executed = false
-    }
-    
-    return true
-end
-
-function UiLib:ExecuteCustomCode(codeName)
-    if not UiLib.Configuration.CustomCode[codeName] then
-        warn("Custom code '"..codeName.."' doesn't exist!")
-        return false
-    end
-    
-    local code = UiLib.Configuration.CustomCode[codeName]
-    
-    if not code.Executed then
-        local success, err = pcall(function()
-            -- Run in a sandboxed environment
-            local env = {
-                print = print,
-                warn = warn,
-                wait = task.wait,
-                delay = task.delay,
-                spawn = task.spawn,
-                UiLib = {
-                    Notify = function(...) return UiLib:Notify(...) end,
-                    CreateToggle = function(...) return UiLib:CreateToggle(...) end,
-                    CreateButton = function(...) return UiLib:CreateButton(...) end,
-                    CreateSlider = function(...) return UiLib:CreateSlider(...) end
-                }
-            }
-            
-            setfenv(code.Function, env)
-            code.Function()
-        end)
-        
-        if not success then
-            warn("Error executing custom code '"..codeName.."': "..err)
-            return false
-        end
-        code.Executed = true
-        return true
-    end
-    
-    return false
-end
-
--- Window management
-function UiLib:Minimize()
-    UiLib.Configuration.Minimized = not UiLib.Configuration.Minimized
-    
-    if UiLib.Configuration.Minimized then
-        UiLib.Animations.Tween(UiLib.MainFrame, {Size = UDim2.new(0, 500, 0, 40)}, 0.3)
-        minimizeButton.Text = "+"
-    else
-        UiLib.Animations.Tween(UiLib.MainFrame, {Size = UDim2.new(0, 500, 0, 600)}, 0.3)
-        minimizeButton.Text = "_"
-    end
-end
-
-function UiLib:Destroy()
-    UiLib.ScreenGui:Destroy()
-    UiLib = nil
-end
-
--- Final initialization
-function UiLib:Init(parent)
-    if not parent then
-        parent = game:GetService("CoreGui")
-    end
-    
-    self.ScreenGui.Parent = parent
-    self:UpdateTheme()
-    
-    -- Add some default custom code examples
-    self:CreateOwnCode("ExampleCode1", function()
-        self:Notify("Example", "Custom code 1 executed successfully!")
-    end)
-    
-    self:CreateOwnCode("ExampleCode2", function()
-        self:Notify("Example", "Custom code 2 executed successfully!")
-    end)
-    
-    -- Welcome notification
-    self:Notify("UI Library Loaded", "Version "..self.Configuration.Version, 3)
-end
-
--- Return the library
-return UiLib
+})
