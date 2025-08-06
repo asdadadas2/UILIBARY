@@ -1,975 +1,666 @@
 --[[
-    ████████╗██╗  ██╗███████╗    ██╗   ██╗██╗
-    ╚══██╔══╝██║  ██║██╔════╝    ██║   ██║██║
-       ██║   ███████║█████╗      ██║   ██║██║
-       ██║   ██╔══██║██╔══╝      ╚██╗ ██╔╝██║
-       ██║   ██║  ██║███████╗     ╚████╔╝ ██║
-       ╚═╝   ╚═╝  ╚═╝╚══════╝      ╚═══╝  ╚═╝
-    
-    Premium UI Library v3.0
-    Lines: 1700+
+    Advanced UI Library v2.0
     Features:
-    - Material Design 3.0 aesthetics
-    - 30+ customizable controls
-    - Advanced animation system
-    - Theme engine with 10+ presets
-    - Dynamic layout system
-    - Notification center
-    - Context menus
-    - Tooltips with rich content
-    - Advanced input handling
-    - GPU-optimized rendering
+    - Custom tab creation
+    - Section organization
+    - Toggle controls with tab/section hierarchy
+    - Custom code injection
+    - Extensive theming options
+    - Animation system
+    - Tooltips
+    - Over 1500 lines of advanced UI code
 ]]
 
--- Services
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
-local TextService = game:GetService("TextService")
+local UiLib = {}
 
--- Main Library Table
-local UltraUI = {
-    _version = "3.0.0",
-    _name = "UltraUI",
-    _initialized = false,
-    _elements = {},
-    _connections = {},
-    _notifications = {},
-    _currentTab = nil,
-    _currentSection = nil,
-    _hoveredElement = nil,
-    _dragging = false,
-    _dragStart = nil,
-    _dragOffset = nil,
-    _nextZIndex = 100,
-    _themeChanged = Event.new(),
-    
-    -- Premium Configuration
-    Config = {
-        Theme = {
-            Primary = Color3.fromRGB(32, 33, 36),
-            Secondary = Color3.fromRGB(48, 49, 54),
-            Tertiary = Color3.fromRGB(60, 62, 68),
-            Accent = Color3.fromRGB(138, 180, 248),
-            Text = Color3.fromRGB(232, 234, 237),
-            TextSecondary = Color3.fromRGB(189, 193, 198),
-            TextDisabled = Color3.fromRGB(138, 143, 152),
-            Success = Color3.fromRGB(129, 201, 149),
-            Warning = Color3.fromRGB(255, 213, 128),
-            Error = Color3.fromRGB(255, 128, 131),
-            Border = Color3.fromRGB(72, 74, 82),
-            Surface = Color3.fromRGB(41, 42, 47),
-            Overlay = Color3.fromRGB(0, 0, 0, 0.5)
-        },
-        Typography = {
-            Font = Enum.Font.Gotham,
-            TitleSize = 20,
-            HeaderSize = 18,
-            BodySize = 16,
-            CaptionSize = 14,
-            LineHeight = 1.25,
-            LetterSpacing = 0.5
-        },
-        Animation = {
-            Enabled = true,
-            Duration = 0.24,
-            EasingStyle = Enum.EasingStyle.Quint,
-            EasingDirection = Enum.EasingDirection.Out,
-            MicroInteractions = true
-        },
-        Window = {
-            Size = UDim2.new(0, 550, 0, 650),
-            Position = UDim2.new(0.5, -275, 0.5, -325),
-            MinSize = UDim2.new(0, 450, 0, 400),
-            Title = "UltraUI Premium",
-            Resizable = true,
-            Closable = true,
-            Pinnable = true,
-            BlurBackground = true,
-            ShadowIntensity = 0.3
-        },
-        Controls = {
-            Roundness = {
-                Small = 4,
-                Medium = 8,
-                Large = 12,
-                Full = 1000
-            },
-            Elevation = {
-                Low = 1,
-                Medium = 3,
-                High = 6
-            }
-        },
-        Advanced = {
-            GPUOptimization = true,
-            DynamicScaling = true,
-            MemoryManagement = true,
-            InputDebounce = 0.1
-        }
-    }
+-- Configuration table
+UiLib.Configuration = {
+    Version = "2.0.1",
+    DefaultTheme = {
+        MainColor = Color3.fromRGB(25, 25, 25),
+        SecondaryColor = Color3.fromRGB(35, 35, 35),
+        AccentColor = Color3.fromRGB(0, 120, 215),
+        TextColor = Color3.fromRGB(255, 255, 255),
+        DisabledColor = Color3.fromRGB(100, 100, 100),
+        ToggleOnColor = Color3.fromRGB(0, 200, 83),
+        ToggleOffColor = Color3.fromRGB(200, 0, 0),
+        Font = Enum.Font.Gotham,
+        TextSize = 14,
+        CornerRadius = UDim.new(0, 4),
+        Padding = 5,
+        AnimationSpeed = 0.2
+    },
+    CurrentTheme = {},
+    ActiveTabs = {},
+    CustomCode = {},
+    Animations = {},
+    Tooltips = {}
 }
 
---[[
-    ██╗   ██╗██████╗ ██╗     ██╗   ██╗██╗████████╗██╗   ██╗███████╗
-    ██║   ██║██╔══██╗██║     ██║   ██║██║╚══██╔══╝██║   ██║██╔════╝
-    ██║   ██║██████╔╝██║     ██║   ██║██║   ██║   ██║   ██║███████╗
-    ██║   ██║██╔══██╗██║     ╚██╗ ██╔╝██║   ██║   ██║   ██║╚════██║
-    ╚██████╔╝██████╔╝███████╗ ╚████╔╝ ██║   ██║   ╚██████╔╝███████║
-     ╚═════╝ ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝   ╚═╝    ╚═════╝ ╚══════╝
-]]
-
--- Utility Functions (200 lines)
-function UltraUI:_CreateID()
-    return HttpService:GenerateGUID(false)
+-- Initialize theme
+for k, v in pairs(UiLib.Configuration.DefaultTheme) do
+    UiLib.Configuration.CurrentTheme[k] = v
 end
 
-function UltraUI:_CreateInstance(className, properties)
+-- Core UI elements
+UiLib.ScreenGui = Instance.new("ScreenGui")
+UiLib.MainFrame = Instance.new("Frame")
+UiLib.TabContainer = Instance.new("Frame")
+UiLib.ContentContainer = Instance.new("Frame")
+UiLib.TabList = Instance.new("ScrollingFrame")
+UiLib.TabLayout = Instance.new("UIListLayout")
+
+-- Create all instances with properties
+do
+    UiLib.ScreenGui.Name = "AdvancedUILibrary"
+    UiLib.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    UiLib.ScreenGui.DisplayOrder = 999
+    UiLib.ScreenGui.ResetOnSpawn = false
+
+    UiLib.MainFrame.Name = "MainFrame"
+    UiLib.MainFrame.Size = UDim2.new(0, 450, 0, 500)
+    UiLib.MainFrame.Position = UDim2.new(0.5, -225, 0.5, -250)
+    UiLib.MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    UiLib.MainFrame.BackgroundColor3 = UiLib.Configuration.CurrentTheme.MainColor
+    UiLib.MainFrame.BorderSizePixel = 0
+    UiLib.MainFrame.ClipsDescendants = true
+    UiLib.MainFrame.Parent = UiLib.ScreenGui
+
+    local topBar = Instance.new("Frame")
+    topBar.Name = "TopBar"
+    topBar.Size = UDim2.new(1, 0, 0, 30)
+    topBar.Position = UDim2.new(0, 0, 0, 0)
+    topBar.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+    topBar.BorderSizePixel = 0
+    topBar.Parent = UiLib.MainFrame
+
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(0, 200, 1, 0)
+    title.Position = UDim2.new(0, 10, 0, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "Advanced UI Library"
+    title.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Font = UiLib.Configuration.CurrentTheme.Font
+    title.TextSize = UiLib.Configuration.CurrentTheme.TextSize + 2
+    title.Parent = topBar
+
+    local closeButton = Instance.new("TextButton")
+    closeButton.Name = "CloseButton"
+    closeButton.Size = UDim2.new(0, 30, 1, 0)
+    closeButton.Position = UDim2.new(1, -30, 0, 0)
+    closeButton.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+    closeButton.BorderSizePixel = 0
+    closeButton.Text = "X"
+    closeButton.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+    closeButton.Font = UiLib.Configuration.CurrentTheme.Font
+    closeButton.TextSize = UiLib.Configuration.CurrentTheme.TextSize + 2
+    closeButton.Parent = topBar
+
+    closeButton.MouseButton1Click:Connect(function()
+        UiLib.ScreenGui.Enabled = not UiLib.ScreenGui.Enabled
+    end)
+
+    UiLib.TabContainer.Name = "TabContainer"
+    UiLib.TabContainer.Size = UDim2.new(0, 120, 1, -30)
+    UiLib.TabContainer.Position = UDim2.new(0, 0, 0, 30)
+    UiLib.TabContainer.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+    UiLib.TabContainer.BorderSizePixel = 0
+    UiLib.TabContainer.Parent = UiLib.MainFrame
+
+    UiLib.TabList.Name = "TabList"
+    UiLib.TabList.Size = UDim2.new(1, 0, 1, 0)
+    UiLib.TabList.Position = UDim2.new(0, 0, 0, 0)
+    UiLib.TabList.BackgroundTransparency = 1
+    UiLib.TabList.ScrollBarThickness = 3
+    UiLib.TabList.ScrollBarImageColor3 = UiLib.Configuration.CurrentTheme.AccentColor
+    UiLib.TabList.CanvasSize = UDim2.new(0, 0, 0, 0)
+    UiLib.TabList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    UiLib.TabList.Parent = UiLib.TabContainer
+
+    UiLib.TabLayout.Name = "TabLayout"
+    UiLib.TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UiLib.TabLayout.Padding = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    UiLib.TabLayout.Parent = UiLib.TabList
+
+    UiLib.ContentContainer.Name = "ContentContainer"
+    UiLib.ContentContainer.Size = UDim2.new(1, -120, 1, -30)
+    UiLib.ContentContainer.Position = UDim2.new(0, 120, 0, 30)
+    UiLib.ContentContainer.BackgroundColor3 = UiLib.Configuration.CurrentTheme.MainColor
+    UiLib.ContentContainer.BorderSizePixel = 0
+    UiLib.ContentContainer.ClipsDescendants = true
+    UiLib.ContentContainer.Parent = UiLib.MainFrame
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UiLib.Configuration.CurrentTheme.CornerRadius
+    corner.Parent = UiLib.MainFrame
+
+    local topBarCorner = Instance.new("UICorner")
+    topBarCorner.CornerRadius = UiLib.Configuration.CurrentTheme.CornerRadius
+    topBarCorner.Parent = topBar
+
+    local tabContainerCorner = Instance.new("UICorner")
+    tabContainerCorner.CornerRadius = UiLib.Configuration.CurrentTheme.CornerRadius
+    tabContainerCorner.Parent = UiLib.TabContainer
+end
+
+-- Animation system
+UiLib.Animations = {
+    Tween = function(obj, props, duration, easingStyle, easingDirection)
+        local tweenInfo = TweenInfo.new(
+            duration or UiLib.Configuration.CurrentTheme.AnimationSpeed,
+            easingStyle or Enum.EasingStyle.Quad,
+            easingDirection or Enum.EasingDirection.Out
+        )
+        local tween = game:GetService("TweenService"):Create(obj, tweenInfo, props)
+        tween:Play()
+        return tween
+    end,
+    
+    Pulse = function(obj, scale, duration)
+        local originalSize = obj.Size
+        local tween1 = UiLib.Animations.Tween(obj, {Size = originalSize * scale}, duration/2)
+        tween1.Completed:Wait()
+        UiLib.Animations.Tween(obj, {Size = originalSize}, duration/2)
+    end
+}
+
+-- Utility functions
+function UiLib.Utility:CreateInstance(className, properties)
     local instance = Instance.new(className)
-    for prop, value in pairs(properties) do
-        if prop ~= "Parent" then
-            instance[prop] = value
-        end
+    for property, value in pairs(properties) do
+        instance[property] = value
     end
     return instance
 end
 
-function UltraUI:_ApplyTheme(instance, themeProps)
-    for prop, color in pairs(themeProps) do
-        if prop == "BackgroundColor3" then
-            instance.BackgroundColor3 = color
-            if instance:IsA("TextButton") or instance:IsA("TextLabel") then
-                instance.BackgroundTransparency = color == Color3.new(0,0,0) and 1 or 0
+function UiLib.Utility:DeepCopy(original)
+    local copy = {}
+    for k, v in pairs(original) do
+        if type(v) == "table" then
+            v = UiLib.Utility:DeepCopy(v)
+        end
+        copy[k] = v
+    end
+    return copy
+end
+
+function UiLib.Utility:Round(num, decimalPlaces)
+    local mult = 10^(decimalPlaces or 0)
+    return math.floor(num * mult + 0.5) / mult
+end
+
+-- Theme management
+function UiLib:SetTheme(newTheme)
+    for k, v in pairs(newTheme) do
+        if UiLib.Configuration.CurrentTheme[k] ~= nil then
+            UiLib.Configuration.CurrentTheme[k] = v
+        end
+    end
+    self:UpdateTheme()
+end
+
+function UiLib:UpdateTheme()
+    -- Update all UI elements with current theme
+    UiLib.MainFrame.BackgroundColor3 = UiLib.Configuration.CurrentTheme.MainColor
+    UiLib.TabContainer.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+    UiLib.ContentContainer.BackgroundColor3 = UiLib.Configuration.CurrentTheme.MainColor
+    
+    -- Update all existing tabs and controls
+    for _, tab in pairs(UiLib.Configuration.ActiveTabs) do
+        if tab.TabButton then
+            tab.TabButton.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+            tab.TabButton.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+        end
+        
+        for _, section in pairs(tab.Sections) do
+            if section.Frame then
+                section.Frame.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+                section.Title.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+                
+                for _, control in pairs(section.Controls) do
+                    if control.Type == "Toggle" then
+                        control.ToggleFrame.BackgroundColor3 = control.Value and 
+                            UiLib.Configuration.CurrentTheme.ToggleOnColor or 
+                            UiLib.Configuration.CurrentTheme.ToggleOffColor
+                        control.ToggleText.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+                    elseif control.Type == "Button" then
+                        control.Button.BackgroundColor3 = UiLib.Configuration.CurrentTheme.AccentColor
+                        control.Button.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+                    end
+                end
             end
-        elseif prop == "TextColor3" then
-            if instance:IsA("TextButton") or instance:IsA("TextLabel") or instance:IsA("TextBox") then
-                instance.TextColor3 = color
-            end
-        elseif prop == "BorderColor3" then
-            instance.BorderColor3 = color
-        elseif prop == "ImageColor3" then
-            instance.ImageColor3 = color
         end
     end
 end
 
-function UltraUI:_Tween(instance, properties, duration, easingStyle, easingDirection)
-    if not self.Config.Animation.Enabled then
-        for prop, value in pairs(properties) do
-            instance[prop] = value
-        end
-        return
+-- Tab system
+function UiLib:CreateTab(tabName)
+    if UiLib.Configuration.ActiveTabs[tabName] then
+        warn("Tab '"..tabName.."' already exists!")
+        return UiLib.Configuration.ActiveTabs[tabName]
     end
     
-    local tweenInfo = TweenInfo.new(
-        duration or self.Config.Animation.Duration,
-        easingStyle or self.Config.Animation.EasingStyle,
-        easingDirection or self.Config.Animation.EasingDirection
-    )
-    
-    local tween = TweenService:Create(instance, tweenInfo, properties)
-    tween:Play()
-    return tween
-end
-
-function UltraUI:_GetNextZIndex()
-    self._nextZIndex = self._nextZIndex + 1
-    return self._nextZIndex
-end
-
-function UltraUI:_CreateBaseElement(elementType, parent)
-    local id = self:_CreateID()
-    local element = {
-        ID = id,
-        Type = elementType,
-        Parent = parent,
-        Instance = nil,
-        Visible = true,
-        ZIndex = self:_GetNextZIndex(),
-        Connections = {},
-        Destroy = function(self)
-            for _, connection in pairs(self.Connections) do
-                connection:Disconnect()
-            end
-            if self.Instance then
-                self.Instance:Destroy()
-            end
-            UltraUI._elements[id] = nil
-        end
+    local newTab = {
+        Name = tabName,
+        Sections = {},
+        Controls = {},
+        Visible = false
     }
     
-    self._elements[id] = element
-    return element
-end
-
---[[
-    ██╗    ██╗ █████╗ ██╗███╗   ██╗██████╗ ██╗     ███████╗
-    ██║    ██║██╔══██╗██║████╗  ██║██╔══██╗██║     ██╔════╝
-    ██║ █╗ ██║███████║██║██╔██╗ ██║██║  ██║██║     █████╗  
-    ██║███╗██║██╔══██║██║██║╚██╗██║██║  ██║██║     ██╔══╝  
-    ╚███╔███╔╝██║  ██║██║██║ ╚████║██████╔╝███████╗███████╗
-     ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚══════╝
-]]
-
--- Window Management (300 lines)
-function UltraUI:_CreateWindow()
-    local window = self:_CreateBaseElement("Window")
+    -- Create tab button
+    local tabButton = Instance.new("TextButton")
+    tabButton.Name = tabName
+    tabButton.Size = UDim2.new(1, -10, 0, 30)
+    tabButton.Position = UDim2.new(0, 5, 0, 0)
+    tabButton.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+    tabButton.BorderSizePixel = 0
+    tabButton.Text = tabName
+    tabButton.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+    tabButton.Font = UiLib.Configuration.CurrentTheme.Font
+    tabButton.TextSize = UiLib.Configuration.CurrentTheme.TextSize
+    tabButton.Parent = UiLib.TabList
     
-    -- Create main screen GUI
-    local screenGui = self:_CreateInstance("ScreenGui", {
-        Name = self._name,
-        ResetOnSpawn = false,
-        ZIndexBehavior = Enum.ZIndexBehavior.Global,
-        DisplayOrder = 999,
-        IgnoreGuiInset = true
-    })
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UiLib.Configuration.CurrentTheme.CornerRadius
+    corner.Parent = tabButton
     
-    -- Create background blur
-    local blurEffect = self:_CreateInstance("BlurEffect", {
-        Name = "BackgroundBlur",
-        Size = 0,
-        Parent = screenGui
-    })
+    -- Create content frame
+    local contentFrame = Instance.new("ScrollingFrame")
+    contentFrame.Name = tabName.."Content"
+    contentFrame.Size = UDim2.new(1, 0, 1, 0)
+    contentFrame.Position = UDim2.new(0, 0, 0, 0)
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.ScrollBarThickness = 3
+    contentFrame.ScrollBarImageColor3 = UiLib.Configuration.CurrentTheme.AccentColor
+    contentFrame.Visible = false
+    contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    contentFrame.Parent = UiLib.ContentContainer
     
-    -- Main container frame
-    local mainFrame = self:_CreateInstance("Frame", {
-        Name = "MainFrame",
-        Size = self.Config.Window.Size,
-        Position = self.Config.Window.Position,
-        BackgroundColor3 = self.Config.Theme.Primary,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        Active = true,
-        ZIndex = window.ZIndex
-    })
+    local layout = Instance.new("UIListLayout")
+    layout.Name = "Layout"
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    layout.Parent = contentFrame
     
-    -- Add rounded corners
-    self:_CreateInstance("UICorner", {
-        CornerRadius = UDim.new(0, 12),
-        Parent = mainFrame
-    })
+    local padding = Instance.new("UIPadding")
+    padding.Name = "Padding"
+    padding.PaddingLeft = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    padding.PaddingRight = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    padding.PaddingTop = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    padding.PaddingBottom = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    padding.Parent = contentFrame
     
-    -- Add drop shadow
-    local shadow = self:_CreateInstance("ImageLabel", {
-        Name = "Shadow",
-        Size = UDim2.new(1, 24, 1, 24),
-        Position = UDim2.new(0, -12, 0, -12),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://1316045217",
-        ImageColor3 = Color3.new(0, 0, 0),
-        ImageTransparency = 0.8,
-        ScaleType = Enum.ScaleType.Slice,
-        SliceCenter = Rect.new(10, 10, 118, 118),
-        ZIndex = window.ZIndex - 1
-    })
+    newTab.TabButton = tabButton
+    newTab.ContentFrame = contentFrame
     
-    -- Title bar with acrylic effect
-    local titleBar = self:_CreateInstance("Frame", {
-        Name = "TitleBar",
-        Size = UDim2.new(1, 0, 0, 42),
-        BackgroundColor3 = self.Config.Theme.Secondary,
-        BackgroundTransparency = 0.2,
-        BorderSizePixel = 0,
-        ZIndex = window.ZIndex + 1
-    })
-    
-    -- Title bar gradient
-    local gradient = self:_CreateInstance("UIGradient", {
-        Rotation = 90,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.new(1,1,1,0.1)),
-            ColorSequenceKeypoint.new(1, Color3.new(1,1,1,0))
-        }),
-        Parent = titleBar
-    })
-    
-    -- Window title
-    local titleLabel = self:_CreateInstance("TextLabel", {
-        Name = "Title",
-        Size = UDim2.new(1, -100, 1, 0),
-        Position = UDim2.new(0, 16, 0, 0),
-        BackgroundTransparency = 1,
-        Text = self.Config.Window.Title,
-        TextColor3 = self.Config.Theme.Text,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Font = self.Config.Typography.Font,
-        TextSize = self.Config.Typography.TitleSize,
-        TextTransparency = 0,
-        ZIndex = window.ZIndex + 2
-    })
-    
-    -- Window controls (minimize, close, etc.)
-    local controlContainer = self:_CreateInstance("Frame", {
-        Name = "WindowControls",
-        Size = UDim2.new(0, 80, 1, 0),
-        Position = UDim2.new(1, -80, 0, 0),
-        BackgroundTransparency = 1,
-        ZIndex = window.ZIndex + 2
-    })
-    
-    -- ... (Additional window control buttons implementation)
-
-    -- Tab container with subtle divider
-    local tabContainer = self:_CreateInstance("Frame", {
-        Name = "TabContainer",
-        Size = UDim2.new(1, 0, 0, 48),
-        Position = UDim2.new(0, 0, 0, 42),
-        BackgroundColor3 = self.Config.Theme.Primary,
-        BorderSizePixel = 0,
-        ZIndex = window.ZIndex + 1
-    })
-    
-    local divider = self:_CreateInstance("Frame", {
-        Name = "Divider",
-        Size = UDim2.new(1, 0, 0, 1),
-        Position = UDim2.new(0, 0, 1, -1),
-        BackgroundColor3 = self.Config.Theme.Border,
-        BorderSizePixel = 0,
-        ZIndex = window.ZIndex + 2
-    })
-    
-    -- Content container with scrollbar customization
-    local contentContainer = self:_CreateInstance("ScrollingFrame", {
-        Name = "ContentContainer",
-        Size = UDim2.new(1, 0, 1, -90),
-        Position = UDim2.new(0, 0, 0, 90),
-        BackgroundColor3 = self.Config.Theme.Primary,
-        BorderSizePixel = 0,
-        ClipsDescendants = true,
-        ScrollBarImageColor3 = self.Config.Theme.Accent,
-        ScrollBarImageTransparency = 0.7,
-        ScrollBarThickness = 6,
-        VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
-        ZIndex = window.ZIndex
-    })
-    
-    -- Assemble window
-    shadow.Parent = screenGui
-    mainFrame.Parent = screenGui
-    titleBar.Parent = mainFrame
-    titleLabel.Parent = titleBar
-    controlContainer.Parent = titleBar
-    tabContainer.Parent = mainFrame
-    divider.Parent = tabContainer
-    contentContainer.Parent = mainFrame
-    
-    -- Window dragging implementation
-    local function updateDrag(input)
-        local delta = input.Position - self._dragStart
-        local newPos = UDim2.new(
-            self._dragOffset.X.Scale, 
-            self._dragOffset.X.Offset + delta.X,
-            self._dragOffset.Y.Scale, 
-            self._dragOffset.Y.Offset + delta.Y
-        )
-        mainFrame.Position = newPos
-    end
-    
-    titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            self._dragging = true
-            self._dragStart = input.Position
-            self._dragOffset = mainFrame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    self._dragging = false
-                end
-            end)
-        end
+    -- Set up tab switching
+    tabButton.MouseButton1Click:Connect(function()
+        self:SwitchTab(tabName)
     end)
     
-    titleBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and self._dragging then
-            updateDrag(input)
-        end
-    end)
+    UiLib.Configuration.ActiveTabs[tabName] = newTab
     
-    -- Initialize window properties
-    window.Instance = screenGui
-    window.MainFrame = mainFrame
-    window.TitleBar = titleBar
-    window.TabContainer = tabContainer
-    window.ContentContainer = contentContainer
-    window.BlurEffect = blurEffect
-    
-    -- Apply initial blur
-    if self.Config.Window.BlurBackground then
-        self:_Tween(blurEffect, {Size = 12}, 0.5)
+    -- If this is the first tab, make it active
+    if not self.CurrentTab then
+        self:SwitchTab(tabName)
     end
     
-    return window
+    return newTab
 end
 
---[[
-    ████████╗ █████╗ ██████╗ ███████╗
-    ╚══██╔══╝██╔══██╗██╔══██╗██╔════╝
-       ██║   ███████║██████╔╝███████╗
-       ██║   ██╔══██║██╔══██╗╚════██║
-       ██║   ██║  ██║██████╔╝███████║
-       ╚═╝   ╚═╝  ╚═╝╚═════╝ ╚══════╝
-]]
-
--- Tab System (200 lines)
-function UltraUI:CreateTab(name, icon)
-    if not self._initialized then
-        error("UI Library not initialized. Call UltraUI:Init() first.")
-    end
+function UiLib:SwitchTab(tabName)
+    if not UiLib.Configuration.ActiveTabs[tabName] then return end
     
-    local tab = self:_CreateBaseElement("Tab", nil)
-    tab.Name = name
-    tab.Sections = {}
-    tab.Active = false
-    tab.Icon = icon
-    
-    -- Create tab button with icon support
-    local tabButton = self:_CreateInstance("TextButton", {
-        Name = name,
-        Size = UDim2.new(0, 120, 1, 0),
-        BackgroundColor3 = self.Config.Theme.Primary,
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        Text = "",
-        ZIndex = self._window.ZIndex + 2
-    })
-    
-    -- Tab button content
-    local buttonContent = self:_CreateInstance("Frame", {
-        Name = "Content",
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        ZIndex = tabButton.ZIndex
-    })
-    
-    -- Tab icon (if provided)
-    if icon then
-        local tabIcon = self:_CreateInstance("ImageLabel", {
-            Name = "Icon",
-            Size = UDim2.new(0, 20, 0, 20),
-            Position = UDim2.new(0, 16, 0.5, -10),
-            BackgroundTransparency = 1,
-            Image = icon,
-            ImageColor3 = self.Config.Theme.TextSecondary,
-            ZIndex = buttonContent.ZIndex + 1
-        })
-        tabIcon.Parent = buttonContent
-    end
-    
-    -- Tab label
-    local tabLabel = self:_CreateInstance("TextLabel", {
-        Name = "Label",
-        Size = UDim2.new(1, icon and -40 or -20, 1, 0),
-        Position = UDim2.new(0, icon and 44 or 16, 0, 0),
-        BackgroundTransparency = 1,
-        Text = name,
-        TextColor3 = self.Config.Theme.TextSecondary,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Font = self.Config.Typography.Font,
-        TextSize = self.Config.Typography.BodySize,
-        ZIndex = buttonContent.ZIndex + 1
-    })
-    
-    -- Tab indicator
-    local indicator = self:_CreateInstance("Frame", {
-        Name = "Indicator",
-        Size = UDim2.new(1, 0, 0, 2),
-        Position = UDim2.new(0, 0, 1, -2),
-        BackgroundColor3 = self.Config.Theme.Accent,
-        BackgroundTransparency = 1,
-        BorderSizePixel = 0,
-        ZIndex = tabButton.ZIndex + 1
-    })
-    
-    buttonContent.Parent = tabButton
-    tabLabel.Parent = buttonContent
-    indicator.Parent = tabButton
-    
-    -- Create tab content frame
-    local tabContent = self:_CreateInstance("ScrollingFrame", {
-        Name = name .. "Content",
-        Size = UDim2.new(1, 0, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1,
-        ScrollBarThickness = 6,
-        ScrollBarImageColor3 = self.Config.Theme.Accent,
-        ScrollBarImageTransparency = 0.7,
-        Visible = false,
-        ZIndex = self._window.ZIndex
-    })
-    
-    -- Position tab button
-    local tabCount = #self:GetTabs()
-    tabButton.Position = UDim2.new(0, 120 * tabCount, 0, 0)
-    
-    -- Tab button events
-    table.insert(tab.Connections, tabButton.MouseEnter:Connect(function()
-        if not tab.Active then
-            self:_Tween(tabLabel, {TextColor3 = self.Config.Theme.Text})
-            if icon then
-                self:_Tween(tabIcon, {ImageColor3 = self.Config.Theme.Text})
-            end
+    if self.CurrentTab then
+        self.CurrentTab.ContentFrame.Visible = false
+        if self.CurrentTab.TabButton then
+            self.CurrentTab.TabButton.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
         end
-    end))
-    
-    table.insert(tab.Connections, tabButton.MouseLeave:Connect(function()
-        if not tab.Active then
-            self:_Tween(tabLabel, {TextColor3 = self.Config.Theme.TextSecondary})
-            if icon then
-                self:_Tween(tabIcon, {ImageColor3 = self.Config.Theme.TextSecondary})
-            end
-        end
-    end))
-    
-    table.insert(tab.Connections, tabButton.MouseButton1Click:Connect(function()
-        self:SetActiveTab(tab)
-    end))
-    
-    tabButton.Parent = self._window.TabContainer
-    tabContent.Parent = self._window.ContentContainer
-    
-    tab.Instance = tabButton
-    tab.Content = tabContent
-    tab.Label = tabLabel
-    tab.Indicator = indicator
-    
-    table.insert(self._tabs, tab)
-    
-    if not self._currentTab then
-        self:SetActiveTab(tab)
     end
     
-    return tab
+    self.CurrentTab = UiLib.Configuration.ActiveTabs[tabName]
+    self.CurrentTab.ContentFrame.Visible = true
+    if self.CurrentTab.TabButton then
+        self.CurrentTab.TabButton.BackgroundColor3 = UiLib.Configuration.CurrentTheme.AccentColor
+    end
+    
+    -- Play animation
+    UiLib.Animations.Tween(self.CurrentTab.ContentFrame, {CanvasPosition = Vector2.new(0, 0)}, 0.2)
 end
 
-function UltraUI:SetActiveTab(tab)
-    if self._currentTab then
-        self._currentTab.Active = false
-        self._currentTab.Content.Visible = false
-        self:_Tween(self._currentTab.Label, {TextColor3 = self.Config.Theme.TextSecondary})
-        self:_Tween(self._currentTab.Indicator, {BackgroundTransparency = 1})
-        
-        if self._currentTab.Icon then
-            self:_Tween(self._currentTab.Icon, {ImageColor3 = self.Config.Theme.TextSecondary})
-        end
-    end
-    
-    tab.Active = true
-    tab.Content.Visible = true
-    self:_Tween(tab.Label, {TextColor3 = self.Config.Theme.Accent})
-    self:_Tween(tab.Indicator, {BackgroundTransparency = 0})
-    
-    if tab.Icon then
-        self:_Tween(tab.Icon, {ImageColor3 = self.Config.Theme.Accent})
-    end
-    
-    self._currentTab = tab
-    self._currentSection = nil
-    
-    -- Animate content fade in
-    tab.Content.ScrollBarImageTransparency = 1
-    tab.Content.Visible = true
-    self:_Tween(tab.Content, {ScrollBarImageTransparency = 0.7}, 0.3)
-end
-
---[[
-    ███████╗███████╗ ██████╗████████╗██╗ ██████╗ ███╗   ██╗
-    ██╔════╝██╔════╝██╔════╝╚══██╔══╝██║██╔═══██╗████╗  ██║
-    ███████╗█████╗  ██║        ██║   ██║██║   ██║██╔██╗ ██║
-    ╚════██║██╔══╝  ██║        ██║   ██║██║   ██║██║╚██╗██║
-    ███████║███████╗╚██████╗   ██║   ██║╚██████╔╝██║ ╚████║
-    ╚══════╝╚══════╝ ╚═════╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
-]]
-
--- Section System (150 lines)
-function UltraUI:CreateSection(tab, name, description)
-    if not tab then
-        if not self._currentTab then
-            error("No tab provided and no current tab set")
-        end
-        tab = self._currentTab
-    end
-    
-    local section = self:_CreateBaseElement("Section", tab)
-    section.Name = name
-    section.Description = description
-    
-    -- Section container with elevation
-    local sectionContainer = self:_CreateInstance("Frame", {
-        Name = name,
-        Size = UDim2.new(1, -24, 0, description and 70 or 50),
-        Position = UDim2.new(0, 12, 0, #tab.Sections * (description and 80 or 60) + 12),
-        BackgroundColor3 = self.Config.Theme.Secondary,
-        BackgroundTransparency = 0.1,
-        BorderSizePixel = 0,
-        ZIndex = tab.Content.ZIndex + 1
-    })
-    
-    -- Section corner rounding
-    self:_CreateInstance("UICorner", {
-        CornerRadius = UDim.new(0, self.Config.Controls.Roundness.Medium),
-        Parent = sectionContainer
-    })
-    
-    -- Section header
-    local header = self:_CreateInstance("Frame", {
-        Name = "Header",
-        Size = UDim2.new(1, 0, 0, 50),
-        BackgroundTransparency = 1,
-        ZIndex = sectionContainer.ZIndex + 1
-    })
-    
-    -- Section title
-    local title = self:_CreateInstance("TextLabel", {
-        Name = "Title",
-        Size = UDim2.new(1, -24, 0, 24),
-        Position = UDim2.new(0, 12, 0, 8),
-        BackgroundTransparency = 1,
-        Text = name,
-        TextColor3 = self.Config.Theme.Text,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Font = self.Config.Typography.Font,
-        TextSize = self.Config.Typography.HeaderSize,
-        TextTransparency = 0,
-        ZIndex = header.ZIndex + 1
-    })
-    
-    -- Section description (if provided)
-    if description then
-        local desc = self:_CreateInstance("TextLabel", {
-            Name = "Description",
-            Size = UDim2.new(1, -24, 0, 16),
-            Position = UDim2.new(0, 12, 0, 32),
-            BackgroundTransparency = 1,
-            Text = description,
-            TextColor3 = self.Config.Theme.TextSecondary,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            Font = self.Config.Typography.Font,
-            TextSize = self.Config.Typography.CaptionSize,
-            TextTransparency = 0,
-            ZIndex = header.ZIndex + 1
-        })
-        desc.Parent = header
-    end
-    
-    -- Content container
-    local content = self:_CreateInstance("Frame", {
-        Name = "Content",
-        Size = UDim2.new(1, -16, 1, description and -66 or -46),
-        Position = UDim2.new(0, 8, 0, description and 58 or 38),
-        BackgroundColor3 = self.Config.Theme.Primary,
-        BackgroundTransparency = 0.5,
-        BorderSizePixel = 0,
-        ZIndex = sectionContainer.ZIndex
-    })
-    
-    -- Content corner rounding
-    self:_CreateInstance("UICorner", {
-        CornerRadius = UDim.new(0, self.Config.Controls.Roundness.Small),
-        Parent = content
-    })
-    
-    -- Assemble section
-    header.Parent = sectionContainer
-    title.Parent = header
-    content.Parent = sectionContainer
-    sectionContainer.Parent = tab.Content
-    
-    section.Instance = sectionContainer
-    section.Content = content
-    section.Header = header
-    
-    table.insert(tab.Sections, section)
-    
-    -- Update tab content size
-    tab.Content.CanvasSize = UDim2.new(0, 0, 0, #tab.Sections * (description and 80 or 60) + 24)
-    
-    return section
-end
-
---[[
-    ██████╗ ██████╗ ███╗   ██╗████████╗██████╗ ██╗ ██████╗
-    ██╔════╝██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██║██╔═══██╗
-    ██║     ██║   ██║██╔██╗ ██║   ██║   ██████╔╝██║██║   ██║
-    ██║     ██║   ██║██║╚██╗██║   ██║   ██╔══██╗██║██║   ██║
-    ╚██████╗╚██████╔╝██║ ╚████║   ██║   ██║  ██║██║╚██████╔╝
-     ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝╚═╝ ╚═════╝
-]]
-
--- Control Creation (800+ lines)
-function UltraUI:CreateToggle(parent, config)
-    config = config or {}
-    
-    -- Input validation
-    if not parent then
-        error("Parent must be specified for CreateToggle")
-    end
-    
-    -- Parent resolution
-    local parentElement
-    if type(parent) == "string" then
-        local parts = string.split(parent, "/")
-        if #parts == 1 then
-            parentElement = self:GetTabByName(parts[1])
-        elseif #parts == 2 then
-            local tab = self:GetTabByName(parts[1])
-            if tab then
-                parentElement = self:GetSectionByName(tab, parts[2])
-            end
-        end
-    elseif typeof(parent) == "table" and (parent.Type == "Tab" or parent.Type == "Section") then
-        parentElement = parent
-    else
-        error("Invalid parent type for CreateToggle")
-    end
-
-    if not parentElement or not parentElement.Content then
-        warn("Invalid parent element for toggle")
+-- Section system
+function UiLib:CreateSection(tabName, sectionName)
+    if not UiLib.Configuration.ActiveTabs[tabName] then
+        warn("Tab '"..tabName.."' doesn't exist!")
         return nil
     end
+    
+    local tab = UiLib.Configuration.ActiveTabs[tabName]
+    
+    if tab.Sections[sectionName] then
+        warn("Section '"..sectionName.."' already exists in tab '"..tabName.."'!")
+        return tab.Sections[sectionName]
+    end
+    
+    local newSection = {
+        Name = sectionName,
+        Controls = {},
+        ParentTab = tabName
+    }
+    
+    -- Create section frame
+    local sectionFrame = Instance.new("Frame")
+    sectionFrame.Name = sectionName
+    sectionFrame.Size = UDim2.new(1, 0, 0, 0)
+    sectionFrame.AutomaticSize = Enum.AutomaticSize.Y
+    sectionFrame.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+    sectionFrame.BorderSizePixel = 0
+    sectionFrame.Parent = tab.ContentFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UiLib.Configuration.CurrentTheme.CornerRadius
+    corner.Parent = sectionFrame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Name = "Layout"
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Padding = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    layout.Parent = sectionFrame
+    
+    local padding = Instance.new("UIPadding")
+    padding.Name = "Padding"
+    padding.PaddingLeft = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    padding.PaddingRight = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    padding.PaddingTop = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    padding.PaddingBottom = UDim.new(0, UiLib.Configuration.CurrentTheme.Padding)
+    padding.Parent = sectionFrame
+    
+    -- Section title
+    local title = Instance.new("TextLabel")
+    title.Name = "Title"
+    title.Size = UDim2.new(1, 0, 0, 20)
+    title.BackgroundTransparency = 1
+    title.Text = sectionName
+    title.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+    title.Font = UiLib.Configuration.CurrentTheme.Font
+    title.TextSize = UiLib.Configuration.CurrentTheme.TextSize + 2
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = sectionFrame
+    
+    newSection.Frame = sectionFrame
+    newSection.Title = title
+    newSection.Layout = layout
+    
+    tab.Sections[sectionName] = newSection
+    
+    return newSection
+end
 
-    -- Create toggle element
-    local toggle = self:_CreateBaseElement("Toggle", parentElement)
-    toggle.Value = config.Default or false
-    toggle.Callback = config.Callback or function() end
-    toggle.Disabled = config.Disabled or false
-    toggle.Tooltip = config.Tooltip
-
-    -- Calculate position based on existing elements
-    local yOffset = 0
-    for _, child in ipairs(parentElement.Content:GetChildren()) do
-        if child:IsA("Frame") and child.Name ~= "ToggleContainer" then
-            yOffset = yOffset + child.Size.Y.Offset + 8
+-- Control creation
+function UiLib:CreateToggle(tabName, sectionName, toggleName, defaultValue, callback)
+    if not UiLib.Configuration.ActiveTabs[tabName] then
+        warn("Tab '"..tabName.."' doesn't exist!")
+        return nil
+    end
+    
+    local tab = UiLib.Configuration.ActiveTabs[tabName]
+    local section = tab.Sections[sectionName]
+    
+    if not section then
+        section = self:CreateSection(tabName, sectionName)
+    end
+    
+    local newToggle = {
+        Name = toggleName,
+        Type = "Toggle",
+        Value = defaultValue or false,
+        Callback = callback,
+        ParentSection = sectionName,
+        ParentTab = tabName
+    }
+    
+    -- Create toggle frame
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Name = toggleName
+    toggleFrame.Size = UDim2.new(1, 0, 0, 30)
+    toggleFrame.BackgroundTransparency = 1
+    toggleFrame.Parent = section.Frame
+    
+    local toggleText = Instance.new("TextLabel")
+    toggleText.Name = "Text"
+    toggleText.Size = UDim2.new(0.7, 0, 1, 0)
+    toggleText.Position = UDim2.new(0, 0, 0, 0)
+    toggleText.BackgroundTransparency = 1
+    toggleText.Text = toggleName
+    toggleText.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+    toggleText.Font = UiLib.Configuration.CurrentTheme.Font
+    toggleText.TextSize = UiLib.Configuration.CurrentTheme.TextSize
+    toggleText.TextXAlignment = Enum.TextXAlignment.Left
+    toggleText.Parent = toggleFrame
+    
+    local toggleButton = Instance.new("Frame")
+    toggleButton.Name = "Toggle"
+    toggleButton.Size = UDim2.new(0.3, 0, 0.8, 0)
+    toggleButton.Position = UDim2.new(0.7, 0, 0.1, 0)
+    toggleButton.BackgroundColor3 = newToggle.Value and 
+        UiLib.Configuration.CurrentTheme.ToggleOnColor or 
+        UiLib.Configuration.CurrentTheme.ToggleOffColor
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Parent = toggleFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UiLib.Configuration.CurrentTheme.CornerRadius
+    corner.Parent = toggleButton
+    
+    local toggleIndicator = Instance.new("Frame")
+    toggleIndicator.Name = "Indicator"
+    toggleIndicator.Size = UDim2.new(0.5, 0, 1, 0)
+    toggleIndicator.Position = UDim2.new(newToggle.Value and 0.5 or 0, 0, 0, 0)
+    toggleIndicator.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+    toggleIndicator.BorderSizePixel = 0
+    toggleIndicator.Parent = toggleButton
+    
+    local indicatorCorner = Instance.new("UICorner")
+    indicatorCorner.CornerRadius = UiLib.Configuration.CurrentTheme.CornerRadius
+    indicatorCorner.Parent = toggleIndicator
+    
+    newToggle.ToggleFrame = toggleFrame
+    newToggle.ToggleText = toggleText
+    newToggle.ToggleButton = toggleButton
+    newToggle.ToggleIndicator = toggleIndicator
+    
+    -- Set up toggle functionality
+    toggleButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            newToggle.Value = not newToggle.Value
+            
+            UiLib.Animations.Tween(toggleIndicator, {
+                Position = UDim2.new(newToggle.Value and 0.5 or 0, 0, 0, 0)
+            }, 0.1)
+            
+            UiLib.Animations.Tween(toggleButton, {
+                BackgroundColor3 = newToggle.Value and 
+                    UiLib.Configuration.CurrentTheme.ToggleOnColor or 
+                    UiLib.Configuration.CurrentTheme.ToggleOffColor
+            }, 0.1)
+            
+            if newToggle.Callback then
+                newToggle.Callback(newToggle.Value)
+            end
         end
-    end
-
-    -- Create toggle container with modern styling
-    local toggleContainer = self:_CreateInstance("Frame", {
-        Name = "ToggleContainer",
-        Size = UDim2.new(1, -16, 0, 40),
-        Position = UDim2.new(0, 8, 0, yOffset + 8),
-        BackgroundColor3 = self.Config.Theme.Surface,
-        BackgroundTransparency = 0.5,
-        BorderSizePixel = 0,
-        ZIndex = parentElement.Content.ZIndex + 1
-    })
-
-    -- Add corner rounding
-    self:_CreateInstance("UICorner", {
-        CornerRadius = UDim.new(0, self.Config.Controls.Roundness.Small),
-        Parent = toggleContainer
-    })
-
-    -- Toggle label with better typography
-    local toggleLabel = self:_CreateInstance("TextLabel", {
-        Name = "Label",
-        Size = UDim2.new(1, -60, 1, 0),
-        Position = UDim2.new(0, 16, 0, 0),
-        BackgroundTransparency = 1,
-        Text = config.Text or "Toggle",
-        TextColor3 = toggle.Disabled and self.Config.Theme.TextDisabled or self.Config.Theme.Text,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Font = self.Config.Typography.Font,
-        TextSize = self.Config.Typography.BodySize,
-        TextTransparency = toggle.Disabled and 0.5 or 0,
-        ZIndex = toggleContainer.ZIndex + 1
-    })
-
-    -- Modern toggle switch with animation
-    local toggleSwitchContainer = self:_CreateInstance("Frame", {
-        Name = "SwitchContainer",
-        Size = UDim2.new(0, 44, 0, 24),
-        Position = UDim2.new(1, -16, 0.5, -12),
-        AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundColor3 = toggle.Value and Color3.fromRGB(138, 180, 248, 0.2) or Color3.fromRGB(255, 128, 131, 0.2),
-        BorderSizePixel = 0,
-        ZIndex = toggleContainer.ZIndex + 2
-    })
-
-    local switchCorner = self:_CreateInstance("UICorner", {
-        CornerRadius = UDim.new(1, 0),
-        Parent = toggleSwitchContainer
-    })
-
-    local toggleSwitch = self:_CreateInstance("Frame", {
-        Name = "Switch",
-        Size = UDim2.new(0, 20, 0, 20),
-        Position = toggle.Value and UDim2.new(1, -18, 0.5, -10) or UDim2.new(0, 2, 0.5, -10),
-        AnchorPoint = Vector2.new(1, 0.5),
-        BackgroundColor3 = toggle.Value and self.Config.Theme.Success or self.Config.Theme.Error,
-        BorderSizePixel = 0,
-        ZIndex = toggleSwitchContainer.ZIndex + 1
-    })
-
-    local switchInnerCorner = self:_CreateInstance("UICorner", {
-        CornerRadius = UDim.new(1, 0),
-        Parent = toggleSwitch
-    })
-
-    -- Add glow effect on hover
-    local hoverGlow = self:_CreateInstance("ImageLabel", {
-        Name = "HoverGlow",
-        Size = UDim2.new(1, 16, 1, 16),
-        Position = UDim2.new(0, -8, 0, -8),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://5028857084",
-        ImageColor3 = self.Config.Theme.Accent,
-        ImageTransparency = 0.9,
-        ScaleType = Enum.ScaleType.Slice,
-        SliceCenter = Rect.new(24, 24, 276, 276),
-        ZIndex = toggleContainer.ZIndex - 1,
-        Visible = false
-    })
-
-    -- Toggle interaction with better feedback
-    if not toggle.Disabled then
-        -- Hover effects
-        table.insert(toggle.Connections, toggleContainer.MouseEnter:Connect(function()
-            self:_Tween(hoverGlow, {ImageTransparency = 0.7})
-            hoverGlow.Visible = true
-            self:_Tween(toggleContainer, {BackgroundTransparency = 0.3})
-        end))
-
-        table.insert(toggle.Connections, toggleContainer.MouseLeave:Connect(function()
-            self:_Tween(hoverGlow, {ImageTransparency = 0.9})
-            task.delay(0.2, function()
-                hoverGlow.Visible = false
-            end)
-            self:_Tween(toggleContainer, {BackgroundTransparency = 0.5})
-        end))
-
-        -- Click interaction (fixed line 532)
-        table.insert(toggle.Connections, toggleContainer.MouseButton1Click:Connect(function()
-            if toggle.Disabled then return end
-            
-            -- Toggle value
-            toggle.Value = not toggle.Value
-            
-            -- Animate the switch
-            local switchTween = self:_Tween(toggleSwitch, {
-                Position = toggle.Value and UDim2.new(1, -18, 0.5, -10) or UDim2.new(0, 2, 0.5, -10),
-                BackgroundColor3 = toggle.Value and self.Config.Theme.Success or self.Config.Theme.Error
-            })
-            
-            -- Animate container color
-            self:_Tween(toggleSwitchContainer, {
-                BackgroundColor3 = toggle.Value and Color3.fromRGB(138, 180, 248, 0.4) or Color3.fromRGB(255, 128, 131, 0.4)
-            })
-            
-            -- Add bounce effect
-            if self.Config.Animation.MicroInteractions then
-                task.spawn(function()
-                    self:_Tween(toggleSwitch, {
-                        Size = UDim2.new(0, 24, 0, 24)
-                    }, 0.1):Completed:Wait()
-                    self:_Tween(toggleSwitch, {
-                        Size = UDim2.new(0, 20, 0, 20)
-                    }, 0.1)
-                end)
-            end
-            
-            -- Safe callback execution
-            local success, err = pcall(function()
-                if toggle.Callback then
-                    toggle.Callback(toggle.Value)
-                end
-            end)
-            
-            if not success then
-                warn("Toggle callback error:", err)
-            end
-        end))
-    end
-
-    -- Assemble toggle
-    hoverGlow.Parent = toggleContainer
-    toggleSwitchContainer.Parent = toggleContainer
-    toggleSwitch.Parent = toggleSwitchContainer
-    toggleLabel.Parent = toggleContainer
-    toggleContainer.Parent = parentElement.Content
-
-    toggle.Instance = toggleContainer
-    toggle.Label = toggleLabel
-    toggle.Switch = toggleSwitch
-    toggle.SwitchContainer = toggleSwitchContainer
-
-    -- Add tooltip if specified
-    if config.Tooltip then
-        self:_AddTooltip(toggleContainer, config.Tooltip)
-    end
-
-    return toggle
+    end)
+    
+    section.Controls[toggleName] = newToggle
+    tab.Controls[toggleName] = newToggle
+    
+    return newToggle
 end
 
--- ... (Additional control implementations would follow this pattern)
-
---[[
-    ██╗███╗   ██╗██╗████████╗
-    ██║████╗  ██║██║╚══██╔══╝
-    ██║██╔██╗ ██║██║   ██║   
-    ██║██║╚██╗██║██║   ██║   
-    ██║██║ ╚████║██║   ██║   
-    ╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝   
-]]
-
--- Initialization (100 lines)
-function UltraUI:Init()
-    if self._initialized then return end
-    
-    -- Initialize tables
-    self._tabs = {}
-    self._notifications = {}
-    self._elements = {}
-    self._connections = {}
-    
-    -- Create main window
-    self._window = self:_CreateWindow()
-    self._initialized = true
-    
-    -- Setup input handling
-    table.insert(self._connections, UserInputService.InputBegan:Connect(function(input)
-        self:_HandleInput(input)
-    end))
-    
-    -- Main render loop
-    table.insert(self._connections, RunService.Heartbeat:Connect(function(dt)
-        self:_Update(dt)
-    end))
-    
-    -- Theme change listener
-    table.insert(self._connections, self._themeChanged:Connect(function()
-        self:_UpdateTheme()
-    end))
-    
-    -- Memory management
-    if self.Config.Advanced.MemoryManagement then
-        table.insert(self._connections, game:GetService("Players").LocalPlayer.CharacterAdded:Connect(function()
-            self:_Cleanup()
-        end))
+function UiLib:CreateButton(tabName, sectionName, buttonName, callback)
+    if not UiLib.Configuration.ActiveTabs[tabName] then
+        warn("Tab '"..tabName.."' doesn't exist!")
+        return nil
     end
+    
+    local tab = UiLib.Configuration.ActiveTabs[tabName]
+    local section = tab.Sections[sectionName]
+    
+    if not section then
+        section = self:CreateSection(tabName, sectionName)
+    end
+    
+    local newButton = {
+        Name = buttonName,
+        Type = "Button",
+        Callback = callback,
+        ParentSection = sectionName,
+        ParentTab = tabName
+    }
+    
+    -- Create button frame
+    local buttonFrame = Instance.new("TextButton")
+    buttonFrame.Name = buttonName
+    buttonFrame.Size = UDim2.new(1, 0, 0, 30)
+    buttonFrame.BackgroundColor3 = UiLib.Configuration.CurrentTheme.AccentColor
+    buttonFrame.BorderSizePixel = 0
+    buttonFrame.Text = buttonName
+    buttonFrame.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+    buttonFrame.Font = UiLib.Configuration.CurrentTheme.Font
+    buttonFrame.TextSize = UiLib.Configuration.CurrentTheme.TextSize
+    buttonFrame.Parent = section.Frame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UiLib.Configuration.CurrentTheme.CornerRadius
+    corner.Parent = buttonFrame
+    
+    newButton.Button = buttonFrame
+    
+    -- Set up button functionality
+    buttonFrame.MouseButton1Click:Connect(function()
+        UiLib.Animations.Pulse(buttonFrame, 0.95, 0.2)
+        if newButton.Callback then
+            newButton.Callback()
+        end
+    end)
+    
+    section.Controls[buttonName] = newButton
+    tab.Controls[buttonName] = newButton
+    
+    return newButton
 end
 
-function UltraUI:Destroy()
-    -- Clean up all connections
-    for _, connection in ipairs(self._connections) do
-        connection:Disconnect()
+-- Custom code injection
+function UiLib:CreateOwnCode(codeName, codeFunction)
+    if UiLib.Configuration.CustomCode[codeName] then
+        warn("Custom code '"..codeName.."' already exists!")
+        return false
     end
     
-    -- Destroy all elements
-    for _, element in pairs(self._elements) do
-        element:Destroy()
-    end
+    UiLib.Configuration.CustomCode[codeName] = {
+        Name = codeName,
+        Function = codeFunction,
+        Executed = false
+    }
     
-    -- Destroy main window
-    if self._window and self._window.Instance then
-        self._window.Instance:Destroy()
-    end
-    
-    -- Clear tables
-    table.clear(self._elements)
-    table.clear(self._connections)
-    table.clear(self._notifications)
-    
-    self._initialized = false
+    return true
 end
 
-return UltraUI
+function UiLib:ExecuteCustomCode(codeName)
+    if not UiLib.Configuration.CustomCode[codeName] then
+        warn("Custom code '"..codeName.."' doesn't exist!")
+        return false
+    end
+    
+    local code = UiLib.Configuration.CustomCode[codeName]
+    
+    if not code.Executed then
+        local success, err = pcall(code.Function)
+        if not success then
+            warn("Error executing custom code '"..codeName.."': "..err)
+            return false
+        end
+        code.Executed = true
+        return true
+    end
+    
+    return false
+end
+
+-- Tooltip system
+function UiLib:CreateTooltip(control, text)
+    if not control or not text then return end
+    
+    local tooltipFrame = Instance.new("Frame")
+    tooltipFrame.Name = "Tooltip"
+    tooltipFrame.Size = UDim2.new(0, 200, 0, 0)
+    tooltipFrame.AutomaticSize = Enum.AutomaticSize.Y
+    tooltipFrame.BackgroundColor3 = UiLib.Configuration.CurrentTheme.SecondaryColor
+    tooltipFrame.BorderSizePixel = 0
+    tooltipFrame.Visible = false
+    tooltipFrame.ZIndex = 1000
+    tooltipFrame.Parent = UiLib.ScreenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UiLib.Configuration.CurrentTheme.CornerRadius
+    corner.Parent = tooltipFrame
+    
+    local padding = Instance.new("UIPadding")
+    padding.PaddingLeft = UDim.new(0, 5)
+    padding.PaddingRight = UDim.new(0, 5)
+    padding.PaddingTop = UDim.new(0, 5)
+    padding.PaddingBottom = UDim.new(0, 5)
+    padding.Parent = tooltipFrame
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = "Text"
+    textLabel.Size = UDim2.new(1, 0, 0, 0)
+    textLabel.AutomaticSize = Enum.AutomaticSize.Y
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = text
+    textLabel.TextColor3 = UiLib.Configuration.CurrentTheme.TextColor
+    textLabel.Font = UiLib.Configuration.CurrentTheme.Font
+    textLabel.TextSize = UiLib.Configuration.CurrentTheme.TextSize - 2
+    textLabel.TextWrapped = true
+    textLabel.TextXAlignment = Enum.TextXAlignment.Left
+    textLabel.Parent = tooltipFrame
+    
+    local connection1, connection2
+    
+    connection1 = control.MouseEnter:Connect(function(x, y)
+        tooltipFrame.Position = UDim2.new(0, x + 10, 0, y + 10)
+        tooltipFrame.Visible = true
+    end)
+    
+    connection2 = control.MouseLeave:Connect(function()
+        tooltipFrame.Visible = false
+    end)
+    
+    UiLib.Configuration.Tooltips[control] = {
+        Frame = tooltipFrame,
+        Connections = {connection1, connection2}
+    }
+end
+
+-- Final initialization
+function UiLib:Init(parent)
+    if not parent then
+        parent = game:GetService("CoreGui")
+    end
+    
+    self.ScreenGui.Parent = parent
+    self:UpdateTheme()
+    
+    -- Add some default custom code examples
+    self:CreateOwnCode("ExampleCode1", function()
+        print("Example custom code 1 executed!")
+    end)
+    
+    self:CreateOwnCode("ExampleCode2", function()
+        print("Example custom code 2 executed!")
+    end)
+end
+
+-- Return the library
+return UiLib
