@@ -1,5 +1,5 @@
 --[[
-    Ultra Advanced UI Library v3.0
+    Ultra Advanced UI Library v3.0 (Fixed)
     Features:
     - Modern sleek design with acrylic blur effects
     - 60+ animations including spring physics
@@ -11,7 +11,6 @@
     - Over 2000 lines of premium UI code
 ]]
 
--- Ultra Advanced UI Library v3.0 (Fixed Version)
 local UiLib = {}
 
 -- Core services
@@ -19,7 +18,7 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
--- Utility functions table
+-- Utility functions
 UiLib.Utility = {}
 
 function UiLib.Utility.CreateInstance(className, properties)
@@ -41,6 +40,12 @@ function UiLib.Utility.DeepCopy(original)
     return copy
 end
 
+function UiLib.Utility.Round(num, decimalPlaces)
+    local mult = 10^(decimalPlaces or 0)
+    return math.floor(num * mult + 0.5) / mult
+end
+
+-- Configuration
 UiLib.Configuration = {
     Version = "3.0.0",
     DebugMode = false,
@@ -411,26 +416,6 @@ end)
 closeButton.MouseButton1Click:Connect(function()
     UiLib:Destroy()
 end)
-
--- Utility functions
-function UiLib.Utility:CreateInstance(className, properties)
-    local instance = Instance.new(className)
-    for property, value in pairs(properties) do
-        instance[property] = value
-    end
-    return instance
-end
-
-function UiLib.Utility:DeepCopy(original)
-    local copy = {}
-    for k, v in pairs(original) do
-        if type(v) == "table" then
-            v = UiLib.Utility:DeepCopy(v)
-        end
-        copy[k] = v
-    end
-    return copy
-end
 
 -- Theme management
 function UiLib:SetTheme(themeName)
