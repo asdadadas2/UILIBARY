@@ -11,6 +11,7 @@
     - Over 2000 lines of premium UI code
 ]]
 
+-- Ultra Advanced UI Library v3.0 (Fixed Version)
 local UiLib = {}
 
 -- Core services
@@ -18,7 +19,28 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
--- Configuration
+-- Utility functions table
+UiLib.Utility = {}
+
+function UiLib.Utility.CreateInstance(className, properties)
+    local instance = Instance.new(className)
+    for property, value in pairs(properties) do
+        instance[property] = value
+    end
+    return instance
+end
+
+function UiLib.Utility.DeepCopy(original)
+    local copy = {}
+    for k, v in pairs(original) do
+        if type(v) == "table" then
+            v = UiLib.Utility.DeepCopy(v)
+        end
+        copy[k] = v
+    end
+    return copy
+end
+
 UiLib.Configuration = {
     Version = "3.0.0",
     DebugMode = false,
